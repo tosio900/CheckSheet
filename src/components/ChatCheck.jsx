@@ -150,7 +150,7 @@ export default function ChatCheck({ session, onComplete, onExit }) {
         <div className="progress-container">
           <div className="progress-info">
             <span className="progress-category">
-              {currentItem ? currentItem.categoryName : "完了確認"}
+              {currentItem ? (currentItem.categoryName.length > 17 ? currentItem.categoryName.slice(0, 17) + "..." : currentItem.categoryName) : "完了確認"}
             </span>
             <span className="progress-count">
               {progress}/{TOTAL_ITEMS} ({percentage}%)
@@ -248,7 +248,7 @@ export default function ChatCheck({ session, onComplete, onExit }) {
             </div>
 
             {/* 戻るボタン */}
-            <div className="back-button-container">
+            <div className="back-button-container" style={{ gap: "8px" }}>
               {currentIndex > 0 ? (
                 <button
                   className="btn btn-ghost btn-sm back-btn-with-icon"
@@ -259,6 +259,16 @@ export default function ChatCheck({ session, onComplete, onExit }) {
                 </button>
               ) : (
                 <div style={{ flex: 1 }} />
+              )}
+              
+              {answers.length === TOTAL_ITEMS && (
+                <button
+                  className="btn btn-primary btn-sm back-btn-with-icon"
+                  style={{ flex: 1 }}
+                  onClick={() => onComplete({ ...session, answers, status: "completed" })}
+                >
+                   結果画面に戻る <CheckCircle size={14} />
+                </button>
               )}
             </div>
           </div>
