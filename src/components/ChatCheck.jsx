@@ -53,7 +53,7 @@ export default function ChatCheck({ session, onComplete, onExit }) {
    */
   const handleAnswer = (answer) => {
     const currentItem = allItems[currentIndex];
-    
+
     const newAnswer = {
       categoryId: currentItem.categoryId,
       itemId: currentItem.id,
@@ -150,7 +150,7 @@ export default function ChatCheck({ session, onComplete, onExit }) {
         <div className="progress-container">
           <div className="progress-info">
             <span className="progress-category">
-              {currentItem ? (currentItem.categoryName.length > 17 ? currentItem.categoryName.slice(0, 17) + "..." : currentItem.categoryName) : "完了確認"}
+              {currentItem ? (currentItem.categoryName.length > 20 ? currentItem.categoryName.slice(0, 20) + "..." : currentItem.categoryName) : "完了確認"}
             </span>
             <span className="progress-count">
               {progress}/{TOTAL_ITEMS} ({percentage}%)
@@ -184,8 +184,8 @@ export default function ChatCheck({ session, onComplete, onExit }) {
                   // どこまで行き来できるか: すでに回答済みの数以下ならタップ可能 (最前線含む)
                   const canAccess = i <= answers.length && i < TOTAL_ITEMS;
                   return (
-                    <td 
-                      key={i} 
+                    <td
+                      key={i}
                       className={`${ans ? ans.answer : ""} ${canAccess ? "clickable" : ""} ${currentIndex === i ? "active-col" : ""}`}
                       onClick={() => canAccess && handleHistoryTap(i)}
                     >
@@ -260,14 +260,14 @@ export default function ChatCheck({ session, onComplete, onExit }) {
               ) : (
                 <div style={{ flex: 1 }} />
               )}
-              
+
               {answers.length === TOTAL_ITEMS && (
                 <button
                   className="btn btn-primary btn-sm back-btn-with-icon"
                   style={{ flex: 1 }}
                   onClick={() => onComplete({ ...session, answers, status: "completed" })}
                 >
-                   結果画面に戻る <CheckCircle size={14} />
+                  結果画面に戻る <CheckCircle size={14} />
                 </button>
               )}
             </div>
