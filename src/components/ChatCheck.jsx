@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { getAllItems, TOTAL_ITEMS } from "../data/checkItems";
 import { saveCheckSession } from "../utils/storage";
-import { CheckCircle, XCircle, X, ChevronLeft, Check } from "lucide-react";
+import { CheckCircle, XCircle, X, ChevronLeft, Check, Lightbulb, ListChecks } from "lucide-react";
 
 /**
  * チェック実行画面（メインチェック画面）
@@ -17,8 +17,9 @@ export default function ChatCheck({ session, onComplete, onExit }) {
 
   const matrixScrollRef = useRef(null);
 
-  const currentItem = allItems[currentIndex];
   const progress = answers.length;
+  // 完了フラグ
+  const isAllAnswered = progress === TOTAL_ITEMS;
   const percentage = Math.round((progress / TOTAL_ITEMS) * 100);
 
   /**
@@ -53,6 +54,8 @@ export default function ChatCheck({ session, onComplete, onExit }) {
    * 回答を処理
    */
   const handleAnswer = (answer) => {
+    const currentItem = allItems[currentIndex];
+    
     const newAnswer = {
       categoryId: currentItem.categoryId,
       itemId: currentItem.id,
@@ -77,25 +80,34 @@ export default function ChatCheck({ session, onComplete, onExit }) {
 
     setAnswers(updatedAnswers);
 
-    const nextIndex = currentIndex + 1;
+    let nextIndex = currentIndex + 1;
 
-    if (nextIndex >= allItems.length) {
-      // 全項目完了
-      const completedSession = {
-        ...session,
-        answers: updatedAnswers,
-        currentIndex: nextIndex,
-        status: "completed",
-        completedAt: new Date().toISOString(),
-      };
-      saveCheckSession(completedSession);
-      onComplete(completedSession);
+    // もし全項目完了になるか、すでになっていて最後の問題なら、完了画面(TOTAL_ITEMS)へ
+    if (updatedAnswers.length === TOTAL_ITEMS && nextIndex >= TOTAL_ITEMS) {
+      setCurrentIndex(TOTAL_ITEMS);
+      setAnimKey((prev) => prev + 1);
+      autoSave(updatedAnswers, TOTAL_ITEMS);
     } else {
-      // 次の質問へ
+      // 途中の修正などの場合は、次の問題へ順当に進む
       setCurrentIndex(nextIndex);
       setAnimKey((prev) => prev + 1);
       autoSave(updatedAnswers, nextIndex);
     }
+  };
+
+  /**
+   * 最終的な結果出力へ進む
+   */
+  const handleFinishData = () => {
+    const completedSession = {
+      ...session,
+      answers: answers,
+      currentIndex: TOTAL_ITEMS,
+      status: "completed",
+      completedAt: new Date().toISOString(),
+    };
+    saveCheckSession(completedSession);
+    onComplete(completedSession);
   };
 
   /**
@@ -111,14 +123,12 @@ export default function ChatCheck({ session, onComplete, onExit }) {
   };
 
   /**
-   * 特定の過去の質問に戻る (Undo / マトリックスから飛ぶ)
+   * 特定の過去の質問に戻る / 行き来する (Undo / マトリックスから飛ぶ)
    */
   const handleHistoryTap = (targetIndex) => {
-    if (targetIndex >= 0 && targetIndex < currentIndex) {
-      setCurrentIndex(targetIndex);
-      setAnimKey((prev) => prev + 1);
-      autoSave(answers, targetIndex);
-    }
+    setCurrentIndex(targetIndex);
+    setAnimKey((prev) => prev + 1);
+    autoSave(answers, targetIndex);
   };
 
   /**
@@ -129,7 +139,8 @@ export default function ChatCheck({ session, onComplete, onExit }) {
     onExit();
   };
 
-  if (!currentItem) return null;
+  // currentIndexがTOTAL_ITEMSの時は「すべて完了」の確認画面用なのでundefinedになる
+  const currentItem = allItems[currentIndex];
 
   return (
     <div className="check-screen">
@@ -149,7 +160,9 @@ export default function ChatCheck({ session, onComplete, onExit }) {
         {/* プログレスバー */}
         <div className="progress-container">
           <div className="progress-info">
-            <span className="progress-category">{currentItem.categoryName}</span>
+            <span className="progress-category">
+              {currentItem ? currentItem.categoryName : "完了確認"}
+            </span>
             <span className="progress-count">
               {progress}/{TOTAL_ITEMS} ({percentage}%)
             </span>
@@ -163,7 +176,7 @@ export default function ChatCheck({ session, onComplete, onExit }) {
           </div>
         </div>
 
-        {/* 回答マトリックス (履歴の代わり) */}
+        {/* 回答マトリックス */}
         <div className="answer-matrix" ref={matrixScrollRef}>
           <table className="matrix-table">
             <thead>
@@ -179,12 +192,13 @@ export default function ChatCheck({ session, onComplete, onExit }) {
               <tr>
                 {allItems.map((item, i) => {
                   const ans = answers.find(a => a.itemId === item.id);
-                  const canUndo = i < currentIndex && ans;
+                  // どこまで行き来できるか: すでに回答済みの数以下ならタップ可能 (最前線含む)
+                  const canAccess = i <= answers.length && i < TOTAL_ITEMS;
                   return (
                     <td 
                       key={i} 
-                      className={`${ans ? ans.answer : ""} ${canUndo ? "clickable" : ""} ${currentIndex === i ? "active-col" : ""}`}
-                      onClick={() => canUndo && handleHistoryTap(i)}
+                      className={`${ans ? ans.answer : ""} ${canAccess ? "clickable" : ""} ${currentIndex === i ? "active-col" : ""}`}
+                      onClick={() => canAccess && handleHistoryTap(i)}
                     >
                       {ans?.answer === "yes" ? <Check size={16} strokeWidth={4} /> : ans?.answer === "no" ? <X size={16} strokeWidth={4} /> : "-"}
                     </td>
@@ -193,66 +207,101 @@ export default function ChatCheck({ session, onComplete, onExit }) {
               </tr>
             </tbody>
           </table>
-          <div className="matrix-hint">※回答済みの番号をタップすると修正できます</div>
         </div>
+        <div className="matrix-hint">※解答済みの番号をタップすると修正できます</div>
       </div>
 
-      {/* 質問カード (スクロールせず固定されるエリア) */}
-      <div className="check-content fixed-layout">
-        <div className="question-card main-question focus-animation" key={animKey}>
-          <div className="question-number">
-            Q{currentIndex + 1} / {TOTAL_ITEMS}
-          </div>
-          <h2 className="question-text">{currentItem.question}</h2>
-
-          {/* 備考（常時表示エリア） */}
-          {currentItem.note && (
-            <div className="note-card always-open">
-              <div className="note-card-title">💡 補足と注意</div>
-              <div className="note-card-content">
-                {currentItem.note.split('\n').map((line, idx) => (
-                  <span key={idx}>
-                    {line}
-                    <br />
-                  </span>
-                ))}
+      {currentIndex < TOTAL_ITEMS && currentItem ? (
+        <>
+          {/* 質問カード (スクロールせず固定されるエリア・上部寄せ) */}
+          <div className="check-content fixed-layout">
+            <div className="question-card main-question focus-animation" key={animKey}>
+              <div className="question-number">
+                Q{currentIndex + 1} / {TOTAL_ITEMS}
               </div>
+              <h2 className="question-text">{currentItem.question}</h2>
+
+              {/* 備考（常時表示エリア） */}
+              {currentItem.note && (
+                <div className="note-card always-open">
+                  <div className="note-card-title">
+                    <Lightbulb size={18} color="#b45309" style={{ marginRight: 4 }} />
+                    補足と注意
+                  </div>
+                  <div className="note-card-content">
+                    {currentItem.note.split('\n').map((line, idx) => (
+                      <span key={idx}>
+                        {line}
+                        <br />
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
-          )}
-        </div>
-      </div>
+          </div>
 
-      {/* 回答ボタンエリア (常に画面下部に固定) */}
-      <div className="answer-area fixed-bottom">
-        <div className="answer-buttons">
-          <button
-            className="answer-btn answer-btn-yes"
-            onClick={() => handleAnswer("yes")}
-          >
-            <CheckCircle size={28} /> はい
-          </button>
-          <button
-            className="answer-btn answer-btn-no"
-            onClick={() => handleAnswer("no")}
-          >
-            <XCircle size={28} /> いいえ
-          </button>
-        </div>
+          {/* 回答ボタンエリア (常に画面下部に固定) */}
+          <div className="answer-area fixed-bottom">
+            <div className="answer-buttons">
+              <button
+                className="answer-btn answer-btn-yes"
+                onClick={() => handleAnswer("yes")}
+              >
+                <CheckCircle size={28} /> はい
+              </button>
+              <button
+                className="answer-btn answer-btn-no"
+                onClick={() => handleAnswer("no")}
+              >
+                <XCircle size={28} /> いいえ
+              </button>
+            </div>
 
-        {/* 戻るボタン（または高さ調整のプレースホルダー） */}
-        <div className="back-button-container">
-          {currentIndex > 0 ? (
-            <button
-              className="btn btn-ghost btn-sm btn-block back-btn-with-icon"
-              onClick={handleBack}
-            >
-              <ChevronLeft size={16} /> 前の質問に戻る
+            {/* 戻るボタン / 完了画面へジャンプボタン */}
+            <div className="back-button-container">
+              {currentIndex > 0 ? (
+                <button
+                  className="btn btn-ghost btn-sm back-btn-with-icon"
+                  style={{ flex: 1 }}
+                  onClick={handleBack}
+                >
+                  <ChevronLeft size={16} /> 前の質問に戻る
+                </button>
+              ) : (
+                <div style={{ flex: 1 }} />
+              )}
+              
+              {isAllAnswered && (
+                <button
+                  className="btn btn-primary btn-sm back-btn-with-icon"
+                  style={{ flex: 1 }}
+                  onClick={() => handleHistoryTap(TOTAL_ITEMS)}
+                >
+                  完了画面へ進む <CheckCircle size={14} />
+                </button>
+              )}
+            </div>
+          </div>
+        </>
+      ) : (
+        /* ========================
+           全問題回答後の確認画面
+           ======================== */
+        <div className="check-content" style={{ display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'center' }}>
+          <div className="question-card" style={{ textAlign: "center", margin: "auto" }}>
+            <ListChecks size={64} color="var(--color-primary)" style={{ margin: "0 auto", marginBottom: "16px" }} />
+            <h2 style={{ fontSize: "1.25rem", marginBottom: "12px", fontWeight: "bold" }}>全質問の回答が完了しました</h2>
+            <p style={{ fontSize: "0.9rem", color: "var(--color-text-secondary)", marginBottom: "24px", lineHeight: "1.6" }}>
+              上のマトリックス表をタップすると、それぞれの回答を再確認・修正できます。<br />
+              修正がなければ確定して結果画面へ進んでください。
+            </p>
+            <button className="btn btn-primary btn-lg btn-block" onClick={handleFinishData}>
+              <CheckCircle size={20} /> 結果を確定して次へ
             </button>
-          ) : (
-            <div className="back-button-placeholder" />
-          )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* 中断確認ダイアログ */}
       {showExitConfirm && (
