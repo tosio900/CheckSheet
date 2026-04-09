@@ -50,12 +50,11 @@ export default function App() {
   /**
    * チェック情報入力完了 → チェック開始
    */
-  const handleCheckStart = ({ siteName, inspector, date, memo }) => {
+  const handleCheckStart = ({ siteName, inspector, memo }) => {
     const newSession = {
       checkId: generateCheckId(),
       siteName,
       inspector,
-      date,
       memo: memo || "",
       startedAt: new Date().toISOString(),
       completedAt: null,

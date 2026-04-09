@@ -8,12 +8,10 @@ import { CheckCircle, ArrowLeft } from "lucide-react";
  */
 // ... (中略) ...
 export default function StartScreen({ onStart, onBack }) {
-  const today = new Date().toISOString().slice(0, 10);
   const profile = loadUserProfile() || {};
 
   const [siteName, setSiteName] = useState(profile.siteName || "");
   const [inspector, setInspector] = useState(profile.inspector || "");
-  const [date, setDate] = useState(today);
   const [memo, setMemo] = useState("");
   const [errors, setErrors] = useState({});
 
@@ -22,7 +20,6 @@ export default function StartScreen({ onStart, onBack }) {
     const newErrors = {};
     if (!siteName.trim()) newErrors.siteName = "現場名を入力してください";
     if (!inspector.trim()) newErrors.inspector = "点検者名を入力してください";
-    if (!date) newErrors.date = "日付を入力してください";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -35,11 +32,9 @@ export default function StartScreen({ onStart, onBack }) {
     // 入力履歴を保存して次回に備える
     saveUserProfile(siteName.trim(), inspector.trim());
 
-    console.log("[StartScreen] チェック開始:", { siteName, inspector, date, memo });
     onStart({
       siteName: siteName.trim(),
       inspector: inspector.trim(),
-      date,
       memo: memo.trim(),
     });
   };
@@ -92,23 +87,7 @@ export default function StartScreen({ onStart, onBack }) {
           {errors.inspector && <p className="form-error">{errors.inspector}</p>}
         </div>
 
-        {/* 日付 */}
-        <div className="form-group">
-          <label className="form-label" htmlFor="input-date">
-            日付 <span className="required">*</span>
-          </label>
-          <input
-            id="input-date"
-            className={`form-input ${errors.date ? "error" : ""}`}
-            type="date"
-            value={date}
-            onChange={(e) => {
-              setDate(e.target.value);
-              if (errors.date) setErrors((prev) => ({ ...prev, date: "" }));
-            }}
-          />
-          {errors.date && <p className="form-error">{errors.date}</p>}
-        </div>
+        {/* 日付入力は廃止 */}
 
         {/* 備考・メモ（任意） */}
         <div className="form-group">

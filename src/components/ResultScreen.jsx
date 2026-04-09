@@ -75,14 +75,16 @@ export default function ResultScreen({ session, onRestart, onGoHome, onEdit, onU
           <span className="result-info-value">{session.inspector}</span>
         </div>
         <div className="result-info-row">
-          <span className="result-info-label">日付</span>
-          <span className="result-info-value">{session.date}</span>
-        </div>
-        <div className="result-info-row">
-          <span className="result-info-label">完了時刻</span>
+          <span className="result-info-label">実施日時</span>
           <span className="result-info-value">
             {session.completedAt
-              ? new Date(session.completedAt).toLocaleTimeString("ja-JP")
+              ? new Date(session.completedAt).toLocaleString("ja-JP", {
+                  year: "numeric",
+                  month: "2-digit",
+                  day: "2-digit",
+                  hour: "2-digit",
+                  minute: "2-digit"
+                })
               : "-"}
           </span>
         </div>
@@ -215,8 +217,18 @@ export default function ResultScreen({ session, onRestart, onGoHome, onEdit, onU
                 <td>{session.inspector}</td>
               </tr>
               <tr>
-                <td>日付</td>
-                <td>{session.date}</td>
+                <td>実施日時</td>
+                <td>
+                  {session.completedAt
+                    ? new Date(session.completedAt).toLocaleString("ja-JP", {
+                        year: "numeric",
+                        month: "2-digit",
+                        day: "2-digit",
+                        hour: "2-digit",
+                        minute: "2-digit"
+                      })
+                    : "-"}
+                </td>
               </tr>
               <tr>
                 <td>結果</td>
@@ -255,9 +267,7 @@ export default function ResultScreen({ session, onRestart, onGoHome, onEdit, onU
           </div>
         ))}
 
-        <div className="pdf-footer">
-          出力日時: {new Date().toLocaleString("ja-JP")}
-        </div>
+
       </div>
     </div>
   );
