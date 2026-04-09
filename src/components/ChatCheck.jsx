@@ -12,6 +12,7 @@ export default function ChatCheck({ session, onComplete, onExit }) {
 
   const [currentIndex, setCurrentIndex] = useState(session.currentIndex || 0);
   const [answers, setAnswers] = useState(session.answers || []);
+  const [currentInputs, setCurrentInputs] = useState({}); // 特定項目用の一時入力バッファ
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [animKey, setAnimKey] = useState(0); // アニメーションリトリガー用
 
@@ -29,6 +30,17 @@ export default function ChatCheck({ session, onComplete, onExit }) {
       if (activeElement) {
         activeElement.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
       }
+    }
+  }, [currentIndex]);
+
+  /**
+   * 質問が切り替わった際に、以前の回答があれば入力を復元する
+   */
+  useEffect(() => {
+    const currentItem = allItems[currentIndex];
+    if (currentItem) {
+      const existing = answers.find(a => a.itemId === currentItem.id);
+      setCurrentInputs(existing?.inputs || {});
     }
   }, [currentIndex]);
 
@@ -59,6 +71,7 @@ export default function ChatCheck({ session, onComplete, onExit }) {
       itemId: currentItem.id,
       question: currentItem.question,
       answer,
+      inputs: currentItem.inputs ? { ...currentInputs } : null,
       answeredAt: new Date().toISOString(),
     };
 
@@ -209,6 +222,27 @@ export default function ChatCheck({ session, onComplete, onExit }) {
                 Q{currentIndex + 1} / {TOTAL_ITEMS}
               </div>
               <h2 className="question-text">{currentItem.question}</h2>
+
+              {/* 基準点名等の特定入力項目 */}
+              {currentItem.inputs && (
+                <div className="item-inputs-area" style={{ marginBottom: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+                  {currentItem.inputs.map((label, idx) => (
+                    <div key={idx} className="item-input-group">
+                      <label style={{ fontSize: "var(--font-size-xs)", fontWeight: "bold", color: "var(--color-text-secondary)", marginBottom: "4px", display: "block" }}>
+                        {label}
+                      </label>
+                      <input
+                        type="text"
+                        className="form-input"
+                        placeholder={`${label}を入力`}
+                        value={currentInputs[label] || ""}
+                        onChange={(e) => setCurrentInputs(prev => ({ ...prev, [label]: e.target.value }))}
+                        style={{ padding: "10px", fontSize: "var(--font-size-sm)" }}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
 
               {/* 備考（常時表示エリア） */}
               {currentItem.note && (

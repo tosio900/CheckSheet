@@ -136,7 +136,14 @@ export default function ResultScreen({ session, onRestart, onGoHome, onEdit, onU
                   >
                     {item.answer === "yes" ? <CheckCircle size={18} /> : <XCircle size={18} />}
                   </div>
-                  <div className="result-item-text">{item.question}</div>
+                  <div className="result-item-text">
+                    <div>{item.question}</div>
+                    {session.answers.find(a => a.itemId === item.id)?.inputs && (
+                      <div style={{ fontSize: "0.75rem", color: "var(--color-primary-dark)", marginTop: "4px", background: "var(--color-primary-light)", padding: "2px 6px", borderRadius: "4px", display: "inline-block" }}>
+                        {Object.entries(session.answers.find(a => a.itemId === item.id).inputs).map(([k, v]) => `${k}: ${v || '未入力'}`).join(' / ')}
+                      </div>
+                    )}
+                  </div>
                   <div style={{ color: "var(--color-primary)", marginLeft: "auto", display: "flex", alignItems: "center", justifySelf: "flex-end" }}>
                      <RotateCcw size={14} style={{ opacity: 0.5 }} />
                   </div>
@@ -238,6 +245,11 @@ export default function ResultScreen({ session, onRestart, onGoHome, onEdit, onU
                   {item.answer === "yes" ? "✓" : "✗"}
                 </span>
                 <span>{item.question}</span>
+                {session.answers.find(a => a.itemId === item.id)?.inputs && (
+                  <div style={{ fontSize: "10px", color: "#059669", marginLeft: "24px" }}>
+                    → {Object.entries(session.answers.find(a => a.itemId === item.id).inputs).map(([k, v]) => `${k}: ${v || '-'}`).join(' / ')}
+                  </div>
+                )}
               </div>
             ))}
           </div>
