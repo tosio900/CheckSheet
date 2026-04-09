@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import HomeScreen from "./components/HomeScreen";
 import StartScreen from "./components/StartScreen";
 import ChatCheck from "./components/ChatCheck";
@@ -50,12 +50,13 @@ export default function App() {
   /**
    * チェック情報入力完了 → チェック開始
    */
-  const handleCheckStart = ({ siteName, inspector, date }) => {
+  const handleCheckStart = ({ siteName, inspector, date, memo }) => {
     const newSession = {
       checkId: generateCheckId(),
       siteName,
       inspector,
       date,
+      memo: memo || "",
       startedAt: new Date().toISOString(),
       completedAt: null,
       status: "in_progress",
@@ -76,6 +77,30 @@ export default function App() {
     console.log("[App] チェック完了:", completedSession.checkId);
     setSession(completedSession);
     setScreen("result");
+  };
+
+  /**
+   * 結果画面から特定の質問を修正するために戻る
+   */
+  const handleEditFromResult = (editIndex) => {
+    const editingSession = {
+      ...session,
+      currentIndex: editIndex,
+      status: "in_progress"
+    };
+    saveCheckSession(editingSession);
+    setSession(editingSession);
+    setScreen("check");
+    console.log("[App] 修正のためチェック画面へ戻る index:", editIndex);
+  };
+
+  /**
+   * メモの更新
+   */
+  const handleMemoUpdate = (newMemo) => {
+    const updatedSession = { ...session, memo: newMemo };
+    saveCheckSession(updatedSession);
+    setSession(updatedSession);
   };
 
   /**
@@ -153,6 +178,8 @@ export default function App() {
           session={session}
           onRestart={handleRestart}
           onGoHome={handleGoHome}
+          onEdit={handleEditFromResult}
+          onUpdateMemo={handleMemoUpdate}
         />
       )}
     </div>

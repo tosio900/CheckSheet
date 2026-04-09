@@ -14,6 +14,7 @@ export default function StartScreen({ onStart, onBack }) {
   const [siteName, setSiteName] = useState(profile.siteName || "");
   const [inspector, setInspector] = useState(profile.inspector || "");
   const [date, setDate] = useState(today);
+  const [memo, setMemo] = useState("");
   const [errors, setErrors] = useState({});
 
   /** バリデーション */
@@ -34,11 +35,12 @@ export default function StartScreen({ onStart, onBack }) {
     // 入力履歴を保存して次回に備える
     saveUserProfile(siteName.trim(), inspector.trim());
 
-    console.log("[StartScreen] チェック開始:", { siteName, inspector, date });
+    console.log("[StartScreen] チェック開始:", { siteName, inspector, date, memo });
     onStart({
       siteName: siteName.trim(),
       inspector: inspector.trim(),
       date,
+      memo: memo.trim(),
     });
   };
 
@@ -106,6 +108,22 @@ export default function StartScreen({ onStart, onBack }) {
             }}
           />
           {errors.date && <p className="form-error">{errors.date}</p>}
+        </div>
+
+        {/* 備考・メモ（任意） */}
+        <div className="form-group">
+          <label className="form-label" htmlFor="input-memo">
+            メモ・特記事項 <span style={{fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: "normal"}}>(任意)</span>
+          </label>
+          <textarea
+            id="input-memo"
+            className="form-input"
+            placeholder="例：〇〇側の境界線について特記事項あり"
+            value={memo}
+            onChange={(e) => setMemo(e.target.value)}
+            rows={3}
+            style={{ resize: "vertical" }}
+          />
         </div>
 
         {/* アクションボタン */}

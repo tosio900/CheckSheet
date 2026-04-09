@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { getAllItems, TOTAL_ITEMS } from "../data/checkItems";
 import { saveCheckSession } from "../utils/storage";
-import { CheckCircle, XCircle, X, ChevronLeft, Check, Lightbulb, ListChecks } from "lucide-react";
+import { CheckCircle, XCircle, X, ChevronLeft, Check, Lightbulb } from "lucide-react";
 
 /**
  * チェック実行画面（メインチェック画面）
@@ -18,8 +18,6 @@ export default function ChatCheck({ session, onComplete, onExit }) {
   const matrixScrollRef = useRef(null);
 
   const progress = answers.length;
-  // 完了フラグ
-  const isAllAnswered = progress === TOTAL_ITEMS;
   const percentage = Math.round((progress / TOTAL_ITEMS) * 100);
 
   /**
@@ -82,32 +80,23 @@ export default function ChatCheck({ session, onComplete, onExit }) {
 
     let nextIndex = currentIndex + 1;
 
-    // もし全項目完了になるか、すでになっていて最後の問題なら、完了画面(TOTAL_ITEMS)へ
+    // もし全項目完了になるか、すでになっていて最後の問題なら、完了セッションを作成して即終了
     if (updatedAnswers.length === TOTAL_ITEMS && nextIndex >= TOTAL_ITEMS) {
-      setCurrentIndex(TOTAL_ITEMS);
-      setAnimKey((prev) => prev + 1);
-      autoSave(updatedAnswers, TOTAL_ITEMS);
+      const completedSession = {
+        ...session,
+        answers: updatedAnswers,
+        currentIndex: TOTAL_ITEMS - 1, // 最後の問題にとどめておく
+        status: "completed",
+        completedAt: new Date().toISOString(),
+      };
+      saveCheckSession(completedSession);
+      onComplete(completedSession);
     } else {
       // 途中の修正などの場合は、次の問題へ順当に進む
       setCurrentIndex(nextIndex);
       setAnimKey((prev) => prev + 1);
       autoSave(updatedAnswers, nextIndex);
     }
-  };
-
-  /**
-   * 最終的な結果出力へ進む
-   */
-  const handleFinishData = () => {
-    const completedSession = {
-      ...session,
-      answers: answers,
-      currentIndex: TOTAL_ITEMS,
-      status: "completed",
-      completedAt: new Date().toISOString(),
-    };
-    saveCheckSession(completedSession);
-    onComplete(completedSession);
   };
 
   /**
@@ -258,7 +247,7 @@ export default function ChatCheck({ session, onComplete, onExit }) {
               </button>
             </div>
 
-            {/* 戻るボタン / 完了画面へジャンプボタン */}
+            {/* 戻るボタン */}
             <div className="back-button-container">
               {currentIndex > 0 ? (
                 <button
@@ -271,37 +260,10 @@ export default function ChatCheck({ session, onComplete, onExit }) {
               ) : (
                 <div style={{ flex: 1 }} />
               )}
-              
-              {isAllAnswered && (
-                <button
-                  className="btn btn-primary btn-sm back-btn-with-icon"
-                  style={{ flex: 1 }}
-                  onClick={() => handleHistoryTap(TOTAL_ITEMS)}
-                >
-                  完了画面へ進む <CheckCircle size={14} />
-                </button>
-              )}
             </div>
           </div>
         </>
-      ) : (
-        /* ========================
-           全問題回答後の確認画面
-           ======================== */
-        <div className="check-content" style={{ display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'center' }}>
-          <div className="question-card" style={{ textAlign: "center", margin: "auto" }}>
-            <ListChecks size={64} color="var(--color-primary)" style={{ margin: "0 auto", marginBottom: "16px" }} />
-            <h2 style={{ fontSize: "1.25rem", marginBottom: "12px", fontWeight: "bold" }}>全質問の回答が完了しました</h2>
-            <p style={{ fontSize: "0.9rem", color: "var(--color-text-secondary)", marginBottom: "24px", lineHeight: "1.6" }}>
-              上のマトリックス表をタップすると、それぞれの回答を再確認・修正できます。<br />
-              修正がなければ確定して結果画面へ進んでください。
-            </p>
-            <button className="btn btn-primary btn-lg btn-block" onClick={handleFinishData}>
-              <CheckCircle size={20} /> 結果を確定して次へ
-            </button>
-          </div>
-        </div>
-      )}
+      ) : null}
 
       {/* 中断確認ダイアログ */}
       {showExitConfirm && (

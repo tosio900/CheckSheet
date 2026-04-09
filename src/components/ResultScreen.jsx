@@ -7,7 +7,7 @@ import { CheckCircle, XCircle, FileText, RotateCcw, Home, BadgeCheck } from "luc
  * 結果確認画面コンポーネント
  * チェック結果の表示、PDF出力、アクションボタンを提供
  */
-export default function ResultScreen({ session, onRestart, onGoHome }) {
+export default function ResultScreen({ session, onRestart, onGoHome, onEdit, onUpdateMemo }) {
   const [isPdfGenerating, setIsPdfGenerating] = useState(false);
   const pdfRef = useRef(null);
 
@@ -88,6 +88,19 @@ export default function ResultScreen({ session, onRestart, onGoHome }) {
         </div>
       </div>
 
+      {/* メモ編集エリア */}
+      <div className="result-memo-card" style={{ background: "var(--color-surface)", padding: "var(--space-4)", borderRadius: "var(--radius-xl)", border: "1px solid var(--color-border-light)", marginBottom: "var(--space-4)" }}>
+        <div style={{ fontSize: "var(--font-size-sm)", color: "var(--color-text-secondary)", fontWeight: "bold", marginBottom: "var(--space-2)" }}>メモ・特記事項</div>
+        <textarea
+          className="form-input"
+          value={session.memo || ""}
+          onChange={(e) => onUpdateMemo && onUpdateMemo(e.target.value)}
+          placeholder="ここから追記・修正できます"
+          rows={3}
+          style={{ resize: "vertical", width: "100%", background: "var(--color-bg)" }}
+        />
+      </div>
+
       {/* サマリー */}
       <div className="result-summary">
         <div className="summary-card yes">
@@ -105,18 +118,31 @@ export default function ResultScreen({ session, onRestart, onGoHome }) {
         {categorizedAnswers.map((cat) => (
           <div key={cat.id} className="result-category">
             <div className="result-category-header">{cat.name}</div>
-            {cat.answers.map((item) => (
-              <div key={item.id} className="result-item">
-                <div
-                  className={`result-item-icon ${
-                    item.answer === "yes" ? "yes" : "no"
-                  }`}
+            <div className="result-category-hint" style={{ fontSize: "0.75rem", color: "var(--color-text-muted)", marginBottom: "8px", textAlign: "right" }}>※項目をタップして修正</div>
+            {cat.answers.map((item) => {
+              const globalIndex = session.answers.findIndex(a => a.itemId === item.id);
+              return (
+                <div 
+                  key={item.id} 
+                  className="result-item"
+                  onClick={() => globalIndex >= 0 && onEdit && onEdit(globalIndex)}
+                  style={{ cursor: "pointer" }}
+                  title="タップして回答を修正"
                 >
-                  {item.answer === "yes" ? <CheckCircle size={18} /> : <XCircle size={18} />}
+                  <div
+                    className={`result-item-icon ${
+                      item.answer === "yes" ? "yes" : "no"
+                    }`}
+                  >
+                    {item.answer === "yes" ? <CheckCircle size={18} /> : <XCircle size={18} />}
+                  </div>
+                  <div className="result-item-text">{item.question}</div>
+                  <div style={{ color: "var(--color-primary)", marginLeft: "auto", display: "flex", alignItems: "center", justifySelf: "flex-end" }}>
+                     <RotateCcw size={14} style={{ opacity: 0.5 }} />
+                  </div>
                 </div>
-                <div className="result-item-text">{item.question}</div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         ))}
       </div>
@@ -190,6 +216,10 @@ export default function ResultScreen({ session, onRestart, onGoHome }) {
                 <td>
                   はい: {yesCount}件 / いいえ: {noCount}件
                 </td>
+              </tr>
+              <tr>
+                <td>メモ</td>
+                <td style={{ whiteSpace: "pre-wrap" }}>{session.memo || "なし"}</td>
               </tr>
             </tbody>
           </table>
