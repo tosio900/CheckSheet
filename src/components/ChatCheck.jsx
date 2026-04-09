@@ -213,8 +213,14 @@ export default function ChatCheck({ session, onComplete, onExit }) {
       </div>
 
       {currentIndex < TOTAL_ITEMS && currentItem ? (
-        <>
-          {/* 質問カード (スクロールせず固定されるエリア・上部寄せ) */}
+        (() => {
+          // 追加入力項目がある場合、すべて埋まっているかチェック
+          const isInputIncomplete = currentItem.inputs && 
+            currentItem.inputs.some(label => !currentInputs[label] || currentInputs[label].trim() === "");
+
+          return (
+            <>
+              {/* 質問カード (スクロールせず固定されるエリア・上部寄せ) */}
           <div className="check-content fixed-layout">
             <div className="question-card main-question focus-animation" key={animKey}>
               <div className="question-number">
@@ -265,10 +271,20 @@ export default function ChatCheck({ session, onComplete, onExit }) {
 
           {/* 回答ボタンエリア (常に画面下部に固定) */}
           <div className="answer-area fixed-bottom">
+            {/* バリデーションメッセージ */}
+            {isInputIncomplete && (
+              <div className="validation-message" style={{ color: "var(--color-danger)", fontSize: "var(--font-size-xs)", fontWeight: "bold", textAlign: "center", marginBottom: "var(--space-2)", animation: "fadeIn 0.2s ease" }}>
+                <Lightbulb size={12} style={{ marginRight: 4, verticalAlign: 'middle' }} />
+                上の点名を入力すると「はい」が押せます
+              </div>
+            )}
+            
             <div className="answer-buttons">
               <button
-                className="answer-btn answer-btn-yes"
-                onClick={() => handleAnswer("yes")}
+                className={`answer-btn answer-btn-yes ${isInputIncomplete ? "disabled" : ""}`}
+                onClick={() => !isInputIncomplete && handleAnswer("yes")}
+                disabled={isInputIncomplete}
+                style={isInputIncomplete ? { opacity: 0.5, filter: "grayscale(1)", cursor: "not-allowed" } : {}}
               >
                 <CheckCircle size={28} /> はい
               </button>
@@ -306,6 +322,8 @@ export default function ChatCheck({ session, onComplete, onExit }) {
             </div>
           </div>
         </>
+        );
+      })()
       ) : null}
 
       {/* 中断確認ダイアログ */}
