@@ -1,6 +1,7 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { getAllItems, TOTAL_ITEMS } from "../data/checkItems";
 import { saveCheckSession } from "../utils/storage";
+import { CheckCircle, XCircle, X, ChevronLeft, Check } from "lucide-react";
 
 /**
  * チェック実行画面（メインチェック画面）
@@ -14,9 +15,23 @@ export default function ChatCheck({ session, onComplete, onExit }) {
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [animKey, setAnimKey] = useState(0); // アニメーションリトリガー用
 
+  const matrixScrollRef = useRef(null);
+
   const currentItem = allItems[currentIndex];
   const progress = answers.length;
   const percentage = Math.round((progress / TOTAL_ITEMS) * 100);
+
+  /**
+   * カレントの問題番号が変わるたびにマトリックスを自動スクロール
+   */
+  useEffect(() => {
+    if (matrixScrollRef.current) {
+      const activeElement = matrixScrollRef.current.querySelector(".active-col");
+      if (activeElement) {
+        activeElement.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+      }
+    }
+  }, [currentIndex]);
 
   /**
    * セッションデータをLocalStorageに自動保存
@@ -30,18 +45,14 @@ export default function ChatCheck({ session, onComplete, onExit }) {
         status: "in_progress",
       };
       saveCheckSession(updatedSession);
-      console.log("[ChatCheck] 自動保存完了 index:", updatedIndex, "answers:", updatedAnswers.length);
     },
     [session]
   );
 
   /**
    * 回答を処理
-   * @param {"yes"|"no"} answer
    */
   const handleAnswer = (answer) => {
-    console.log("[ChatCheck] 回答:", currentItem.id, answer);
-
     const newAnswer = {
       categoryId: currentItem.categoryId,
       itemId: currentItem.id,
@@ -50,16 +61,14 @@ export default function ChatCheck({ session, onComplete, onExit }) {
       answeredAt: new Date().toISOString(),
     };
 
-    // 振動フィードバック（デバイスサポート時のみ、軽めに30ms）
+    // 振動フィードバック
     if (navigator.vibrate) {
       navigator.vibrate(30);
     }
 
     // 既存の回答を上書きまたは追加
     const updatedAnswers = [...answers];
-    const existingIdx = updatedAnswers.findIndex(
-      (a) => a.itemId === currentItem.id
-    );
+    const existingIdx = updatedAnswers.findIndex((a) => a.itemId === currentItem.id);
     if (existingIdx >= 0) {
       updatedAnswers[existingIdx] = newAnswer;
     } else {
@@ -72,7 +81,6 @@ export default function ChatCheck({ session, onComplete, onExit }) {
 
     if (nextIndex >= allItems.length) {
       // 全項目完了
-      console.log("[ChatCheck] 全項目完了！");
       const completedSession = {
         ...session,
         answers: updatedAnswers,
@@ -95,7 +103,6 @@ export default function ChatCheck({ session, onComplete, onExit }) {
    */
   const handleBack = () => {
     if (currentIndex > 0) {
-      console.log("[ChatCheck] 前の質問に戻る:", currentIndex - 1);
       const prevIndex = currentIndex - 1;
       setCurrentIndex(prevIndex);
       setAnimKey((prev) => prev + 1);
@@ -104,12 +111,10 @@ export default function ChatCheck({ session, onComplete, onExit }) {
   };
 
   /**
-   * 特定の過去の質問に戻る (Undo)
+   * 特定の過去の質問に戻る (Undo / マトリックスから飛ぶ)
    */
-  const handleHistoryTap = (targetItemId) => {
-    const targetIndex = allItems.findIndex((item) => item.id === targetItemId);
+  const handleHistoryTap = (targetIndex) => {
     if (targetIndex >= 0 && targetIndex < currentIndex) {
-      console.log("[ChatCheck] 履歴から戻る:", targetIndex);
       setCurrentIndex(targetIndex);
       setAnimKey((prev) => prev + 1);
       autoSave(answers, targetIndex);
@@ -124,24 +129,20 @@ export default function ChatCheck({ session, onComplete, onExit }) {
     onExit();
   };
 
-  // 直近5件の回答履歴を取得
-  const recentHistory = [...answers].slice(-5);
-
   if (!currentItem) return null;
 
   return (
     <div className="check-screen">
       {/* ヘッダー */}
-      <div className="check-header">
+      <div className="check-header fixed-header">
         <div className="check-header-top">
           <span className="check-header-title">測量前チェック</span>
           <button
             className="check-header-close"
             onClick={() => setShowExitConfirm(true)}
             aria-label="中断して閉じる"
-            id="btn-exit-check"
           >
-            ✕
+            <X size={20} />
           </button>
         </div>
 
@@ -150,7 +151,7 @@ export default function ChatCheck({ session, onComplete, onExit }) {
           <div className="progress-info">
             <span className="progress-category">{currentItem.categoryName}</span>
             <span className="progress-count">
-              {progress}/{TOTAL_ITEMS}項目完了 ({percentage}%)
+              {progress}/{TOTAL_ITEMS} ({percentage}%)
             </span>
           </div>
           <div className="progress-bar-track">
@@ -158,43 +159,46 @@ export default function ChatCheck({ session, onComplete, onExit }) {
               className="progress-bar-fill"
               style={{ width: `${percentage}%` }}
               role="progressbar"
-              aria-valuenow={percentage}
-              aria-valuemin={0}
-              aria-valuemax={100}
             />
           </div>
         </div>
+
+        {/* 回答マトリックス (履歴の代わり) */}
+        <div className="answer-matrix" ref={matrixScrollRef}>
+          <table className="matrix-table">
+            <thead>
+              <tr>
+                {allItems.map((_, i) => (
+                  <th key={i} className={currentIndex === i ? "active-col" : ""}>
+                    {i + 1}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                {allItems.map((item, i) => {
+                  const ans = answers.find(a => a.itemId === item.id);
+                  const canUndo = i < currentIndex && ans;
+                  return (
+                    <td 
+                      key={i} 
+                      className={`${ans ? ans.answer : ""} ${canUndo ? "clickable" : ""} ${currentIndex === i ? "active-col" : ""}`}
+                      onClick={() => canUndo && handleHistoryTap(i)}
+                    >
+                      {ans?.answer === "yes" ? <Check size={16} strokeWidth={4} /> : ans?.answer === "no" ? <X size={16} strokeWidth={4} /> : "-"}
+                    </td>
+                  );
+                })}
+              </tr>
+            </tbody>
+          </table>
+          <div className="matrix-hint">※回答済みの番号をタップすると修正できます</div>
+        </div>
       </div>
 
-      {/* 履歴リスト表示エリア */}
-      {recentHistory.length > 0 && (
-        <div className="history-feed">
-          {recentHistory.map((historyItem) => {
-            const hIndex = allItems.findIndex((i) => i.id === historyItem.itemId) + 1;
-            return (
-              <div 
-                key={historyItem.itemId} 
-                className="history-bubble"
-                onClick={() => handleHistoryTap(historyItem.itemId)}
-                role="button"
-                aria-label="この質問に戻る"
-              >
-                <div className="history-bubble-header">
-                  <span>Q{hIndex}.</span>
-                  <span className={`history-result ${historyItem.answer}`}>
-                    {historyItem.answer === "yes" ? "✅ はい" : "❌ いいえ"}
-                  </span>
-                </div>
-                <div className="history-bubble-text">{historyItem.question}</div>
-                <div className="history-undo-hint">↩ ここに戻って修正</div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* 質問カード */}
-      <div className="check-content">
+      {/* 質問カード (スクロールせず固定されるエリア) */}
+      <div className="check-content fixed-layout">
         <div className="question-card main-question focus-animation" key={animKey}>
           <div className="question-number">
             Q{currentIndex + 1} / {TOTAL_ITEMS}
@@ -205,10 +209,9 @@ export default function ChatCheck({ session, onComplete, onExit }) {
           {currentItem.note && (
             <div className="note-card always-open">
               <div className="note-card-title">💡 補足と注意</div>
-              {/* 改行を<br>に変換して表示 */}
               <div className="note-card-content">
-                {currentItem.note.split('\n').map((line, i) => (
-                  <span key={i}>
+                {currentItem.note.split('\n').map((line, idx) => (
+                  <span key={idx}>
                     {line}
                     <br />
                   </span>
@@ -219,37 +222,36 @@ export default function ChatCheck({ session, onComplete, onExit }) {
         </div>
       </div>
 
-      {/* 回答ボタンエリア */}
-      <div className="answer-area">
+      {/* 回答ボタンエリア (常に画面下部に固定) */}
+      <div className="answer-area fixed-bottom">
         <div className="answer-buttons">
           <button
             className="answer-btn answer-btn-yes"
             onClick={() => handleAnswer("yes")}
-            id="btn-answer-yes"
           >
-            ⭕ はい
+            <CheckCircle size={28} /> はい
           </button>
           <button
             className="answer-btn answer-btn-no"
             onClick={() => handleAnswer("no")}
-            id="btn-answer-no"
           >
-            ✕ いいえ
+            <XCircle size={28} /> いいえ
           </button>
         </div>
 
-        {/* 戻るボタン */}
-        {currentIndex > 0 && (
-          <div className="back-button">
+        {/* 戻るボタン（または高さ調整のプレースホルダー） */}
+        <div className="back-button-container">
+          {currentIndex > 0 ? (
             <button
-              className="btn btn-ghost btn-sm btn-block"
+              className="btn btn-ghost btn-sm btn-block back-btn-with-icon"
               onClick={handleBack}
-              id="btn-prev-question"
             >
-              ← 前の質問に戻る
+              <ChevronLeft size={16} /> 前の質問に戻る
             </button>
-          </div>
-        )}
+          ) : (
+            <div className="back-button-placeholder" />
+          )}
+        </div>
       </div>
 
       {/* 中断確認ダイアログ */}

@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback } from "react";
 import { categories, TOTAL_ITEMS } from "../data/checkItems";
 import { generatePDF } from "../utils/pdfGenerator";
+import { CheckCircle, XCircle, FileText, RotateCcw, Home, BadgeCheck } from "lucide-react";
 
 /**
  * 結果確認画面コンポーネント
@@ -58,7 +59,7 @@ export default function ResultScreen({ session, onRestart, onGoHome }) {
     <div className="result-screen">
       {/* ヘッダー */}
       <div className="result-header">
-        <div className="result-icon">✅</div>
+        <div className="result-icon"><BadgeCheck size={64} color="var(--color-primary)" /></div>
         <h1>チェック完了！</h1>
         <p>{TOTAL_ITEMS}項目すべてのチェックが完了しました</p>
       </div>
@@ -111,7 +112,7 @@ export default function ResultScreen({ session, onRestart, onGoHome }) {
                     item.answer === "yes" ? "yes" : "no"
                   }`}
                 >
-                  {item.answer === "yes" ? "✓" : "✗"}
+                  {item.answer === "yes" ? <CheckCircle size={18} /> : <XCircle size={18} />}
                 </div>
                 <div className="result-item-text">{item.question}</div>
               </div>
@@ -131,22 +132,24 @@ export default function ResultScreen({ session, onRestart, onGoHome }) {
           {isPdfGenerating ? (
             <span className="loading-spinner">PDF生成中...</span>
           ) : (
-            "📄 PDF出力"
+            <><FileText size={20} style={{ marginRight: 8 }} /> PDF出力</>
           )}
         </button>
         <button
           className="btn btn-secondary btn-block"
           onClick={onRestart}
           id="btn-restart-check"
+          style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "8px" }}
         >
-          🔄 もう一度チェック
+          <RotateCcw size={18} /> もう一度チェック
         </button>
         <button
           className="btn btn-ghost btn-block"
           onClick={onGoHome}
           id="btn-go-home"
+          style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "8px" }}
         >
-          🏠 ホームに戻る
+          <Home size={18} /> ホームに戻る
         </button>
       </div>
 

@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { loadUserProfile, saveUserProfile } from "../utils/storage";
+import { CheckCircle, ArrowLeft } from "lucide-react";
 
 /**
  * チェック開始画面コンポーネント
  * 現場名・点検者名・日付を入力する
  */
+// ... (中略) ...
 export default function StartScreen({ onStart, onBack }) {
   const today = new Date().toISOString().slice(0, 10);
   const profile = loadUserProfile() || {};
@@ -113,7 +115,7 @@ export default function StartScreen({ onStart, onBack }) {
             className="btn btn-primary btn-lg btn-block"
             id="btn-start-check"
           >
-            ✅ チェック開始
+            <CheckCircle size={20} /> チェック開始
           </button>
           <button
             type="button"
@@ -121,7 +123,7 @@ export default function StartScreen({ onStart, onBack }) {
             onClick={onBack}
             id="btn-back-to-home"
           >
-            ← ホームに戻る
+            <ArrowLeft size={16} /> ホームに戻る
           </button>
         </div>
       </form>

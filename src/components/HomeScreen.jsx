@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ClipboardList, AlertTriangle, PenTool } from "lucide-react";
 
 /**
  * ホーム画面コンポーネント
@@ -12,13 +13,13 @@ export default function HomeScreen({ onStartNew, onResume, resumeSession }) {
     <div className="home-screen">
       {/* ロゴ */}
       <div className="home-logo" aria-hidden="true">
-        📋
+        <ClipboardList size={48} strokeWidth={1.5} color="white" />
       </div>
 
       {/* タイトル */}
       <h1 className="home-title">測量前チェック</h1>
       <p className="home-subtitle">
-        チャット形式で効率的にチェック
+        テンポ良く確実に現場チェック
       </p>
 
       {/* アクションボタン */}
@@ -26,7 +27,7 @@ export default function HomeScreen({ onStartNew, onResume, resumeSession }) {
         {/* 中断中セッションがある場合 */}
         {resumeSession && (
           <div className="home-resume-card">
-            <h3>⚠️ 中断中のチェックがあります</h3>
+            <h3><AlertTriangle color="var(--color-warning)" size={16} /> 中断中のチェックがあります</h3>
             <p>
               現場名: {resumeSession.siteName}
               <br />
@@ -59,7 +60,7 @@ export default function HomeScreen({ onStartNew, onResume, resumeSession }) {
           onClick={onStartNew}
           id="btn-start-new"
         >
-          ✏️ 新規チェック開始
+          <PenTool size={20} /> 新規チェック開始
         </button>
       </div>
 

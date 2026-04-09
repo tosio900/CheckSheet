@@ -505,16 +505,23 @@ body {
   min-height: 100dvh;
 }
 
-/* ヘッダー */
-.check-header {
-  position: sticky;
-  top: 0;
+/* ============================================
+   チェック実行画面専用レイアウト
+   ============================================ */
+.check-screen {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden; /* 画面全体のスクロールを禁止 */
+}
+
+/* ヘッダー位置固定化 */
+.check-header.fixed-header {
+  flex-shrink: 0;
+  background: var(--color-bg-gradient);
   z-index: 10;
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--color-border-light);
-  padding: var(--space-3) var(--space-4);
+  padding: var(--space-3) var(--space-4) var(--space-2);
 }
 
 .check-header-top {
@@ -540,7 +547,6 @@ body {
   background: var(--color-border-light);
   border-radius: var(--radius-full);
   cursor: pointer;
-  font-size: var(--font-size-lg);
   color: var(--color-text-secondary);
   transition: all var(--transition-fast);
 }
@@ -550,75 +556,100 @@ body {
   color: var(--color-text);
 }
 
-/* プログレスバー */
-.progress-container {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
+/* 回答進捗マトリックス */
+.answer-matrix {
+  margin-top: var(--space-3);
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: var(--space-2);
+  /* スクロールバー非表示（Webkit） */
+  -ms-overflow-style: none;  
+  scrollbar-width: none;  
 }
 
-.progress-info {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.answer-matrix::-webkit-scrollbar {
+  display: none;
 }
 
-.progress-category {
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-primary-dark);
-  background: var(--color-primary-light);
-  padding: var(--space-1) var(--space-3);
-  border-radius: var(--radius-full);
+.matrix-table {
+  border-collapse: collapse;
+  margin: 0 auto;
 }
 
-.progress-count {
-  font-size: var(--font-size-xs);
+.matrix-table th,
+.matrix-table td {
+  width: 28px;
+  min-width: 28px;
+  height: 28px;
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border: 1px solid var(--color-border-light);
+}
+
+.matrix-table th {
+  background: var(--color-surface);
   color: var(--color-text-secondary);
-  font-weight: var(--font-weight-medium);
 }
 
-.progress-bar-track {
-  width: 100%;
-  height: 6px;
-  background: var(--color-border-light);
-  border-radius: var(--radius-full);
-  overflow: hidden;
+.matrix-table th.active-col {
+  background: var(--color-primary);
+  color: white;
+  border-color: var(--color-primary);
 }
 
-.progress-bar-fill {
-  height: 100%;
-  background: linear-gradient(90deg, var(--color-primary), var(--color-secondary));
-  border-radius: var(--radius-full);
-  transition: width 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+.matrix-table td {
+  background: white;
+  color: var(--color-text-muted);
+}
+
+.matrix-table td.yes {
+  color: var(--color-success);
+  background: #ecfdf5;
+}
+
+.matrix-table td.no {
+  color: var(--color-danger);
+  background: #fef2f2;
+}
+
+.matrix-table td.clickable {
+  cursor: pointer;
+}
+
+.matrix-table td.active-col {
+  border: 2px solid var(--color-primary);
   position: relative;
 }
 
-.progress-bar-fill::after {
+.matrix-table td.active-col::after {
   content: "";
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.3) 50%,
-    transparent 100%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 2s linear infinite;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-bottom: 4px solid var(--color-primary);
 }
 
-/* チェックコンテンツ領域 */
-.check-content {
+.matrix-hint {
+  text-align: center;
+  font-size: 0.65rem;
+  color: var(--color-text-muted);
+  margin-top: 4px;
+}
+
+/* 質問カード領域（高さ固定・内容が長い場合のみカード内スクロール） */
+.check-content.fixed-layout {
   flex: 1;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  padding: var(--space-6);
-  padding-bottom: var(--space-4);
+  justify-content: center; /* 縦の中央に配置 */
+  padding: var(--space-4);
+  overflow-y: auto; /* 万が一画面が小さい場合のみスクロール */
 }
 
 /* 質問カード */
@@ -627,8 +658,8 @@ body {
   border-radius: var(--radius-2xl);
   padding: var(--space-6);
   box-shadow: var(--shadow-lg);
-  animation: scaleIn 0.35s ease;
   border: 1px solid var(--color-border-light);
+  margin: auto 0; /* フレックスコンテナ内で中央配置を補助 */
 }
 
 .question-number {
@@ -644,61 +675,46 @@ body {
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-semibold);
   color: var(--color-text);
-  line-height: 1.7;
+  line-height: 1.5;
   margin-bottom: var(--space-4);
 }
 
-/* 備考セクション */
-.note-toggle {
+/* 備考セクション（常時表示用） */
+.note-card {
+  background: #fffbeb; /* 黄色っぽい背景 */
+  border: 1px solid #fde68a;
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  margin-top: var(--space-2);
+}
+
+.note-card-title {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  color: #b45309;
+  margin-bottom: var(--space-2);
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: 4px;
+}
+
+.note-card-content {
   font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text-secondary);
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: var(--space-2) 0;
-  font-family: var(--font-family);
-  transition: color var(--transition-fast);
+  color: var(--color-text);
+  line-height: 1.6;
 }
 
-.note-toggle:hover {
-  color: var(--color-primary-dark);
-}
-
-.note-toggle-icon {
-  transition: transform var(--transition-fast);
-  font-size: var(--font-size-xs);
-}
-
-.note-toggle-icon.open {
-  transform: rotate(90deg);
-}
-
-.note-content {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-  line-height: 1.8;
-  background: var(--color-bg);
-  padding: var(--space-4);
-  border-radius: var(--radius-lg);
-  margin-top: var(--space-2);
-  animation: slideDown 0.3s ease;
-  white-space: pre-line;
-  border-left: 3px solid var(--color-primary-light);
-}
-
-/* 回答ボタン */
-.answer-area {
-  padding: 0 var(--space-6) var(--space-6);
+/* 回答ボタンエリア（常に画面下部に固定） */
+.answer-area.fixed-bottom {
+  flex-shrink: 0;
+  padding: 0 var(--space-4) var(--space-4);
+  background: var(--color-bg-gradient); /* 背景と同じグラデーションで自然に */
 }
 
 .answer-buttons {
   display: flex;
   gap: var(--space-3);
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-2);
 }
 
 .answer-btn {
@@ -754,10 +770,23 @@ body {
   transform: translateY(-2px);
 }
 
-/* 戻るボタン */
-.back-button {
-  width: 100%;
-  text-align: center;
+/* 戻るボタンのコンテナ（高さ固定用） */
+.back-button-container {
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.back-btn-with-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.back-button-placeholder {
+  height: 36px;
 }
 
 /* ============================================

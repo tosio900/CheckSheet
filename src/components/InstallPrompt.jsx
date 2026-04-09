@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Smartphone, Share, PlusSquare, ArrowDown } from "lucide-react";
 
 /**
  * iOS Safari向けのインストール（ホーム画面に追加）ガイドUI
@@ -31,7 +32,9 @@ export default function InstallPrompt() {
   return (
     <div className="install-prompt-overlay">
       <div className="install-prompt-content">
-        <h2>📱 アプリをホーム画面に追加</h2>
+        <h2 style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+          <Smartphone size={24} style={{ marginRight: 8 }} /> アプリをホーム画面に追加
+        </h2>
         <p>
           オフラインの測量現場でも使えるように、<br />
           このアプリをインストールしてください！
@@ -40,11 +43,11 @@ export default function InstallPrompt() {
         <div className="install-steps">
           <div className="install-step">
             <span className="step-number">1</span>
-            <span>画面下部の「共有」ボタン <strong>[↑]</strong> をタップ</span>
+            <span>画面下部の「共有」ボタン <Share size={16} style={{ verticalAlign: "middle", margin: "0 2px" }} /> をタップ</span>
           </div>
           <div className="install-step">
             <span className="step-number">2</span>
-            <span>少し下にスクロールして<br/><strong>「ホーム画面に追加 ＋」</strong>を選択</span>
+            <span>少し下にスクロールして<br/><strong>「ホーム画面に追加 <PlusSquare size={16} style={{ verticalAlign: "middle", margin: "0 2px" }} />」</strong>を選択</span>
           </div>
         </div>
 
@@ -53,7 +56,7 @@ export default function InstallPrompt() {
         </button>
       </div>
 
-      <div className="install-arrow">↓</div>
+      <div className="install-arrow"><ArrowDown size={32} /></div>
     </div>
   );
 }
