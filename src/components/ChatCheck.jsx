@@ -34,15 +34,17 @@ export default function ChatCheck({ session, onComplete, onExit }) {
   }, [currentIndex]);
 
   /**
-   * 質問が切り替わった際に、以前の回答があれば入力を復元する
+   * 質問を切り替える際の共通処理：入力欄の状態を復元・リセットする
    */
-  useEffect(() => {
-    const currentItem = allItems[currentIndex];
-    if (currentItem) {
-      const existing = answers.find(a => a.itemId === currentItem.id);
+  const syncInputsForIndex = useCallback((targetIndex, latestAnswers) => {
+    const targetItem = allItems[targetIndex];
+    if (targetItem) {
+      const existing = latestAnswers.find(a => a.itemId === targetItem.id);
       setCurrentInputs(existing?.inputs || {});
     }
-  }, [currentIndex]);
+    setCurrentIndex(targetIndex);
+    setAnimKey((prev) => prev + 1);
+  }, [allItems]);
 
   /**
    * セッションデータをLocalStorageに自動保存
@@ -106,8 +108,7 @@ export default function ChatCheck({ session, onComplete, onExit }) {
       onComplete(completedSession);
     } else {
       // 途中の修正などの場合は、次の問題へ順当に進む
-      setCurrentIndex(nextIndex);
-      setAnimKey((prev) => prev + 1);
+      syncInputsForIndex(nextIndex, updatedAnswers);
       autoSave(updatedAnswers, nextIndex);
     }
   };
@@ -118,8 +119,7 @@ export default function ChatCheck({ session, onComplete, onExit }) {
   const handleBack = () => {
     if (currentIndex > 0) {
       const prevIndex = currentIndex - 1;
-      setCurrentIndex(prevIndex);
-      setAnimKey((prev) => prev + 1);
+      syncInputsForIndex(prevIndex, answers);
       autoSave(answers, prevIndex);
     }
   };
@@ -128,8 +128,7 @@ export default function ChatCheck({ session, onComplete, onExit }) {
    * 特定の過去の質問に戻る / 行き来する (Undo / マトリックスから飛ぶ)
    */
   const handleHistoryTap = (targetIndex) => {
-    setCurrentIndex(targetIndex);
-    setAnimKey((prev) => prev + 1);
+    syncInputsForIndex(targetIndex, answers);
     autoSave(answers, targetIndex);
   };
 

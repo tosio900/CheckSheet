@@ -96,6 +96,7 @@
 html {
   font-size: 16px;
   -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -322,8 +323,8 @@ body {
   min-height: 48px;
   min-width: 44px;
   text-decoration: none;
-  user-select: none;
   -webkit-user-select: none;
+  user-select: none;
   position: relative;
   overflow: hidden;
 }
@@ -785,8 +786,8 @@ body {
   border-radius: var(--radius-xl);
   cursor: pointer;
   transition: all var(--transition-base);
-  user-select: none;
   -webkit-user-select: none;
+  user-select: none;
   position: relative;
   overflow: hidden;
 }
@@ -1235,8 +1236,8 @@ body {
   width: 100%;
   padding: var(--space-4);
   background-color: rgba(255, 255, 255, 0.95);
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px); /* Lint対策 */
   box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.1);
   z-index: 9999;
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
