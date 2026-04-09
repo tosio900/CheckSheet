@@ -18,7 +18,12 @@ export default function StartScreen({ onStart, onBack }) {
   /** バリデーション */
   const validate = () => {
     const newErrors = {};
-    if (!siteName.trim()) newErrors.siteName = "現場名を入力してください";
+    if (!siteName.trim()) {
+      newErrors.siteName = "現場名を入力してください";
+    } else if (siteName.trim().length > 20) {
+      newErrors.siteName = "現場名は20文字以内で入力してください";
+    }
+
     if (!inspector.trim()) newErrors.inspector = "点検者名を入力してください";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
