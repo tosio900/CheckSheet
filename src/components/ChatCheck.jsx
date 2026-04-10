@@ -162,7 +162,7 @@ export default function ChatCheck({ session, onComplete, onExit }) {
         <div className="progress-container">
           <div className="progress-info">
             <span className="progress-category">
-              {currentItem ? (currentItem.categoryName.length > 20 ? currentItem.categoryName.slice(0, 20) + "..." : currentItem.categoryName) : "完了確認"}
+              {currentItem ? currentItem.categoryName : "完了確認"}
             </span>
             <span className="progress-count">
               {progress}/{TOTAL_ITEMS} ({percentage}%)
