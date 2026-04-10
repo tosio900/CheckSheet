@@ -1,9 +1,5 @@
-/**
- * LocalStorage操作ユーティリティ
- * チェックセッションの保存・読み込み・削除を管理
- */
-
-const STORAGE_KEY = "survey_check_session";
+import { STORAGE_KEYS } from "../constants/session";
+import logger from "./logger";
 
 /**
  * チェックセッションをLocalStorageに保存
@@ -12,11 +8,11 @@ const STORAGE_KEY = "survey_check_session";
 export function saveCheckSession(sessionData) {
   try {
     const json = JSON.stringify(sessionData);
-    localStorage.setItem(STORAGE_KEY, json);
-    console.log("[Storage] セッション保存完了:", sessionData.checkId);
+    localStorage.setItem(STORAGE_KEYS.SESSION, json);
+    logger.debug("Session saved to storage", sessionData.checkId);
     return true;
   } catch (error) {
-    console.error("[Storage] セッション保存失敗:", error);
+    logger.error("Failed to save session to storage", error);
     return false;
   }
 }
@@ -27,16 +23,16 @@ export function saveCheckSession(sessionData) {
  */
 export function loadCheckSession() {
   try {
-    const json = localStorage.getItem(STORAGE_KEY);
+    const json = localStorage.getItem(STORAGE_KEYS.SESSION);
     if (!json) {
-      console.log("[Storage] 保存済みセッションなし");
+      logger.debug("No saved session found in storage");
       return null;
     }
     const data = JSON.parse(json);
-    console.log("[Storage] セッション読み込み完了:", data.checkId, "status:", data.status);
+    logger.debug("Session loaded from storage", data.checkId, "status:", data.status);
     return data;
   } catch (error) {
-    console.error("[Storage] セッション読み込み失敗:", error);
+    logger.error("Failed to load session from storage", error);
     return null;
   }
 }
@@ -46,11 +42,11 @@ export function loadCheckSession() {
  */
 export function clearCheckSession() {
   try {
-    localStorage.removeItem(STORAGE_KEY);
-    console.log("[Storage] セッション削除完了");
+    localStorage.removeItem(STORAGE_KEYS.SESSION);
+    logger.debug("Session cleared from storage");
     return true;
   } catch (error) {
-    console.error("[Storage] セッション削除失敗:", error);
+    logger.error("Failed to clear session from storage", error);
     return false;
   }
 }
@@ -85,10 +81,10 @@ const PROFILE_KEY = "survey_user_profile";
 export function saveUserProfile(siteName, inspector) {
   try {
     const data = { siteName, inspector, lastUpdated: new Date().toISOString() };
-    localStorage.setItem(PROFILE_KEY, JSON.stringify(data));
-    console.log("[Storage] プロフィール保存完了");
+    localStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(data));
+    logger.debug("User profile saved to storage");
   } catch (error) {
-    console.error("[Storage] プロフィール保存失敗:", error);
+    logger.error("Failed to save user profile to storage", error);
   }
 }
 
@@ -98,11 +94,11 @@ export function saveUserProfile(siteName, inspector) {
  */
 export function loadUserProfile() {
   try {
-    const json = localStorage.getItem(PROFILE_KEY);
+    const json = localStorage.getItem(STORAGE_KEYS.USER_PROFILE);
     if (!json) return null;
     return JSON.parse(json);
   } catch (error) {
-    console.error("[Storage] プロフィール読み込み失敗:", error);
+    logger.error("Failed to load user profile from storage", error);
     return null;
   }
 }

@@ -1,329 +1,111 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { getAllItems, TOTAL_ITEMS } from "../data/checkItems";
-import { saveCheckSession } from "../utils/storage";
-import { CheckCircle, XCircle, X, ChevronLeft, Check, Lightbulb } from "lucide-react";
+import { useCheckSession } from "../hooks/useCheckSession";
+import ProgressHeader from "./check/ProgressHeader";
+import QuestionCard from "./check/QuestionCard";
+import AnswerControls from "./check/AnswerControls";
+import MatrixView from "./check/MatrixView";
+import logger from "../utils/logger";
 
 /**
  * チェック実行画面（メインチェック画面）
- * 一問一答形式で質問を表示し、回答を記録する
  */
-export default function ChatCheck({ session, onComplete, onExit }) {
+export default function ChatCheck({ onComplete, onExit }) {
   const allItems = getAllItems();
+  const { 
+    session, 
+    updateAnswer, 
+    goToIndex 
+  } = useCheckSession();
 
-  const [currentIndex, setCurrentIndex] = useState(session.currentIndex || 0);
-  const [answers, setAnswers] = useState(session.answers || []);
-  const [currentInputs, setCurrentInputs] = useState({}); // 特定項目用の一時入力バッファ
+  const [currentInputs, setCurrentInputs] = useState({});
   const [showExitConfirm, setShowExitConfirm] = useState(false);
-  const [animKey, setAnimKey] = useState(0); // アニメーションリトリガー用
+  const [animKey, setAnimKey] = useState(0);
 
-  const matrixScrollRef = useRef(null);
-
+  const currentIndex = session.currentIndex;
+  const answers = session.answers;
   const progress = answers.length;
   const percentage = Math.round((progress / TOTAL_ITEMS) * 100);
 
-  /**
-   * カレントの問題番号が変わるたびにマトリックスを自動スクロール
-   */
-  useEffect(() => {
-    if (matrixScrollRef.current) {
-      const activeElement = matrixScrollRef.current.querySelector(".active-col");
-      if (activeElement) {
-        activeElement.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
-      }
-    }
-  }, [currentIndex]);
+  const currentItem = allItems[currentIndex];
 
-  /**
-   * 質問を切り替える際の共通処理：入力欄の状態を復元・リセットする
-   */
-  const syncInputsForIndex = useCallback((targetIndex, latestAnswers) => {
-    const targetItem = allItems[targetIndex];
-    if (targetItem) {
-      const existing = latestAnswers.find(a => a.itemId === targetItem.id);
-      setCurrentInputs(existing?.inputs || {});
-    }
-    setCurrentIndex(targetIndex);
-    setAnimKey((prev) => prev + 1);
-  }, [allItems]);
+  const [prevId, setPrevId] = useState(currentItem?.id);
 
-  /**
-   * セッションデータをLocalStorageに自動保存
-   */
-  const autoSave = useCallback(
-    (updatedAnswers, updatedIndex) => {
-      const updatedSession = {
-        ...session,
-        answers: updatedAnswers,
-        currentIndex: updatedIndex,
-        status: "in_progress",
-      };
-      saveCheckSession(updatedSession);
-    },
-    [session]
-  );
+  // currentItemが変わった際に入力値を同期する (cascading renderを避けるためレンダリング中に実行)
+  if (currentItem && currentItem.id !== prevId) {
+    setPrevId(currentItem.id);
+    const existing = answers.find(a => a.itemId === currentItem.id);
+    setCurrentInputs(existing?.inputs || {});
+    setAnimKey(prev => prev + 1);
+    logger.debug("Current item changed (Reset state)", { 
+      index: currentIndex, 
+      id: currentItem.id, 
+      hasExistingAnswer: !!existing 
+    });
+  }
 
-  /**
-   * 回答を処理
-   */
-  const handleAnswer = (answer) => {
-    const currentItem = allItems[currentIndex];
-
-    const newAnswer = {
-      categoryId: currentItem.categoryId,
-      itemId: currentItem.id,
-      question: currentItem.question,
-      answer,
-      inputs: currentItem.inputs ? { ...currentInputs } : null,
-      answeredAt: new Date().toISOString(),
-    };
-
+  const handleHandleAnswer = (answer) => {
     // 振動フィードバック
     if (navigator.vibrate) {
       navigator.vibrate(30);
     }
-
-    // 既存の回答を上書きまたは追加
-    const updatedAnswers = [...answers];
-    const existingIdx = updatedAnswers.findIndex((a) => a.itemId === currentItem.id);
-    if (existingIdx >= 0) {
-      updatedAnswers[existingIdx] = newAnswer;
-    } else {
-      updatedAnswers.push(newAnswer);
-    }
-
-    setAnswers(updatedAnswers);
-
-    let nextIndex = currentIndex + 1;
-
-    // もし全項目完了になるか、すでになっていて最後の問題なら、完了セッションを作成して即終了
-    if (updatedAnswers.length === TOTAL_ITEMS && nextIndex >= TOTAL_ITEMS) {
-      const completedSession = {
-        ...session,
-        answers: updatedAnswers,
-        currentIndex: TOTAL_ITEMS - 1, // 最後の問題にとどめておく
-        status: "completed",
-        completedAt: new Date().toISOString(),
-      };
-      saveCheckSession(completedSession);
-      onComplete(completedSession);
-    } else {
-      // 途中の修正などの場合は、次の問題へ順当に進む
-      syncInputsForIndex(nextIndex, updatedAnswers);
-      autoSave(updatedAnswers, nextIndex);
-    }
+    updateAnswer(currentItem, answer, currentInputs);
   };
 
-  /**
-   * 前の質問に戻る
-   */
   const handleBack = () => {
     if (currentIndex > 0) {
-      const prevIndex = currentIndex - 1;
-      syncInputsForIndex(prevIndex, answers);
-      autoSave(answers, prevIndex);
+      goToIndex(currentIndex - 1);
     }
   };
 
-  /**
-   * 特定の過去の質問に戻る / 行き来する (Undo / マトリックスから飛ぶ)
-   */
-  const handleHistoryTap = (targetIndex) => {
-    syncInputsForIndex(targetIndex, answers);
-    autoSave(answers, targetIndex);
+  const handleJumpTo = (index) => {
+    goToIndex(index);
   };
 
-  /**
-   * 中断して終了
-   */
-  const handleExit = () => {
-    autoSave(answers, currentIndex);
-    onExit();
-  };
-
-  // currentIndexがTOTAL_ITEMSの時は「すべて完了」の確認画面用なのでundefinedになる
-  const currentItem = allItems[currentIndex];
+  // バリデーション計算をメモ化
+  const isInputIncomplete = useMemo(() => {
+    if (!currentItem?.inputs) return false;
+    return currentItem.inputs.some(
+      label => !currentInputs[label] || currentInputs[label].trim() === ""
+    );
+  }, [currentItem, currentInputs]);
 
   return (
     <div className="check-screen">
-      {/* ヘッダー */}
-      <div className="check-header fixed-header">
-        <div className="check-header-top">
-          <span className="check-header-title">測量前チェック</span>
-          <button
-            className="check-header-close"
-            onClick={() => setShowExitConfirm(true)}
-            aria-label="中断して閉じる"
-          >
-            <X size={20} />
-          </button>
-        </div>
+      <ProgressHeader 
+        currentItem={currentItem}
+        progress={progress}
+        percentage={percentage}
+        onExit={() => setShowExitConfirm(true)}
+      />
 
-        {/* プログレスバー */}
-        <div className="progress-container">
-          <div className="progress-info">
-            <span className="progress-category">
-              {currentItem ? currentItem.categoryName : "完了確認"}
-            </span>
-            <span className="progress-count">
-              {progress}/{TOTAL_ITEMS} ({percentage}%)
-            </span>
-          </div>
-          <div className="progress-bar-track">
-            <div
-              className="progress-bar-fill"
-              style={{ width: `${percentage}%` }}
-              role="progressbar"
-            />
-          </div>
-        </div>
-
-        {/* 回答マトリックス */}
-        <div className="answer-matrix" ref={matrixScrollRef}>
-          <table className="matrix-table">
-            <thead>
-              <tr>
-                {allItems.map((_, i) => (
-                  <th key={i} className={currentIndex === i ? "active-col" : ""}>
-                    {i + 1}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                {allItems.map((item, i) => {
-                  const ans = answers.find(a => a.itemId === item.id);
-                  // どこまで行き来できるか: すでに回答済みの数以下ならタップ可能 (最前線含む)
-                  const canAccess = i <= answers.length && i < TOTAL_ITEMS;
-                  return (
-                    <td
-                      key={i}
-                      className={`${ans ? ans.answer : ""} ${canAccess ? "clickable" : ""} ${currentIndex === i ? "active-col" : ""}`}
-                      onClick={() => canAccess && handleHistoryTap(i)}
-                    >
-                      {ans?.answer === "yes" ? <Check size={16} strokeWidth={4} /> : ans?.answer === "no" ? <X size={16} strokeWidth={4} /> : "-"}
-                    </td>
-                  );
-                })}
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <div className="matrix-hint">※解答済みの番号をタップすると修正できます</div>
-      </div>
+      <MatrixView 
+        allItems={allItems}
+        currentIndex={currentIndex}
+        answers={answers}
+        onJumpTo={handleJumpTo}
+      />
 
       {currentIndex < TOTAL_ITEMS && currentItem ? (
-        (() => {
-          // 追加入力項目がある場合、すべて埋まっているかチェック
-          const isInputIncomplete = currentItem.inputs && 
-            currentItem.inputs.some(label => !currentInputs[label] || currentInputs[label].trim() === "");
+        <div className="check-body fixed-layout-body">
+            <QuestionCard 
+                currentItem={currentItem}
+                currentIndex={currentIndex}
+                totalItems={TOTAL_ITEMS}
+                animKey={animKey}
+                currentInputs={currentInputs}
+                onInputChange={(label, value) => setCurrentInputs(prev => ({ ...prev, [label]: value }))}
+            />
 
-          return (
-            <>
-              {/* 質問カード (スクロールせず固定されるエリア・上部寄せ) */}
-          <div className="check-content fixed-layout">
-            <div className="question-card main-question focus-animation" key={animKey}>
-              <div className="question-number">
-                Q{currentIndex + 1} / {TOTAL_ITEMS}
-              </div>
-              <h2 className="question-text">{currentItem.question}</h2>
-
-              {/* 基準点名等の特定入力項目 */}
-              {currentItem.inputs && (
-                <div className="item-inputs-area" style={{ marginBottom: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-                  {currentItem.inputs.map((label, idx) => (
-                    <div key={idx} className="item-input-group">
-                      <label style={{ fontSize: "var(--font-size-xs)", fontWeight: "bold", color: "var(--color-text-secondary)", marginBottom: "4px", display: "block" }}>
-                        {label}
-                      </label>
-                      <input
-                        type="text"
-                        className="form-input"
-                        placeholder={`${label}を入力`}
-                        value={currentInputs[label] || ""}
-                        onChange={(e) => setCurrentInputs(prev => ({ ...prev, [label]: e.target.value }))}
-                        style={{ padding: "10px", fontSize: "var(--font-size-sm)" }}
-                      />
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* 備考（常時表示エリア） */}
-              {currentItem.note && (
-                <div className="note-card always-open">
-                  <div className="note-card-title">
-                    <Lightbulb size={18} color="#b45309" style={{ marginRight: 4 }} />
-                    補足と注意
-                  </div>
-                  <div className="note-card-content">
-                    {currentItem.note.split('\n').map((line, idx) => (
-                      <span key={idx}>
-                        {line}
-                        <br />
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* 回答ボタンエリア (常に画面下部に固定) */}
-          <div className="answer-area fixed-bottom">
-            {/* バリデーションメッセージ */}
-            {isInputIncomplete && (
-              <div className="validation-message" style={{ color: "var(--color-danger)", fontSize: "var(--font-size-xs)", fontWeight: "bold", textAlign: "center", marginBottom: "var(--space-2)", animation: "fadeIn 0.2s ease" }}>
-                <Lightbulb size={12} style={{ marginRight: 4, verticalAlign: 'middle' }} />
-                上の点名を入力すると「はい」が押せます
-              </div>
-            )}
-            
-            <div className="answer-buttons">
-              <button
-                className={`answer-btn answer-btn-yes ${isInputIncomplete ? "disabled" : ""}`}
-                onClick={() => !isInputIncomplete && handleAnswer("yes")}
-                disabled={isInputIncomplete}
-                style={isInputIncomplete ? { opacity: 0.5, filter: "grayscale(1)", cursor: "not-allowed" } : {}}
-              >
-                <CheckCircle size={28} /> はい
-              </button>
-              <button
-                className="answer-btn answer-btn-no"
-                onClick={() => handleAnswer("no")}
-              >
-                <XCircle size={28} /> いいえ
-              </button>
-            </div>
-
-            {/* 戻るボタン */}
-            <div className="back-button-container" style={{ gap: "8px" }}>
-              {currentIndex > 0 ? (
-                <button
-                  className="btn btn-ghost btn-sm back-btn-with-icon"
-                  style={{ flex: 1 }}
-                  onClick={handleBack}
-                >
-                  <ChevronLeft size={16} /> 前の質問に戻る
-                </button>
-              ) : (
-                <div style={{ flex: 1 }} />
-              )}
-
-              {answers.length === TOTAL_ITEMS && (
-                <button
-                  className="btn btn-primary btn-sm back-btn-with-icon"
-                  style={{ flex: 1 }}
-                  onClick={() => onComplete({ ...session, answers, status: "completed" })}
-                >
-                  結果画面に戻る <CheckCircle size={14} />
-                </button>
-              )}
-            </div>
-          </div>
-        </>
-        );
-      })()
+            <AnswerControls 
+                currentIndex={currentIndex}
+                isInputIncomplete={isInputIncomplete}
+                onAnswer={handleHandleAnswer}
+                onBack={handleBack}
+                onComplete={() => onComplete(session)}
+                showCompleteBtn={answers.length === TOTAL_ITEMS}
+            />
+        </div>
       ) : null}
 
       {/* 中断確認ダイアログ */}
@@ -332,20 +114,12 @@ export default function ChatCheck({ session, onComplete, onExit }) {
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <h2 className="modal-title">チェックを中断しますか？</h2>
             <p className="modal-message">
-              現在の進捗は自動的に保存されます。
-              <br />
+              現在の進捗は自動的に保存されます。<br />
               後からトップ画面で続きから再開できます。
             </p>
             <div className="modal-actions">
-              <button
-                className="btn btn-secondary btn-sm"
-                onClick={() => setShowExitConfirm(false)}
-              >
-                続ける
-              </button>
-              <button className="btn btn-warning btn-sm" onClick={handleExit}>
-                中断する
-              </button>
+              <button className="btn btn-secondary btn-sm" onClick={() => setShowExitConfirm(false)}>続ける</button>
+              <button className="btn btn-warning btn-sm" onClick={onExit}>中断する</button>
             </div>
           </div>
         </div>
