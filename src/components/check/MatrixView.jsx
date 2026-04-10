@@ -1,17 +1,18 @@
 import { useRef, useEffect } from "react";
 import { Check, X } from "lucide-react";
+import styles from "./MatrixView.module.css";
 
 export default function MatrixView({ 
   allItems, 
   currentIndex, 
-  answers, 
+  answerMap, 
   onJumpTo 
 }) {
   const matrixScrollRef = useRef(null);
 
   useEffect(() => {
     if (matrixScrollRef.current) {
-      const activeElement = matrixScrollRef.current.querySelector(".active-col");
+      const activeElement = matrixScrollRef.current.querySelector(`.${styles["active-col"]}`);
       if (activeElement) {
         activeElement.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
       }
@@ -20,12 +21,12 @@ export default function MatrixView({
 
   return (
     <div className="answer-matrix-container">
-        <div className="answer-matrix" ref={matrixScrollRef}>
-            <table className="matrix-table">
+        <div className={styles["answer-matrix"]} ref={matrixScrollRef}>
+            <table className={styles["matrix-table"]}>
                 <thead>
                 <tr>
                     {allItems.map((_, i) => (
-                    <th key={i} className={currentIndex === i ? "active-col" : ""}>
+                    <th key={i} className={currentIndex === i ? styles["active-col"] : ""}>
                         {i + 1}
                     </th>
                     ))}
@@ -34,13 +35,13 @@ export default function MatrixView({
                 <tbody>
                 <tr>
                     {allItems.map((item, i) => {
-                    const ans = answers.find(a => a.itemId === item.id);
+                    const ans = answerMap.get(item.id);
                     // 完了項目または現在の位置までアクセス可能
-                    const canAccess = i <= answers.length && i < allItems.length;
+                    const canAccess = i <= answerMap.size && i < allItems.length;
                     return (
                         <td
                         key={i}
-                        className={`${ans ? ans.answer : ""} ${canAccess ? "clickable" : ""} ${currentIndex === i ? "active-col" : ""}`}
+                        className={`${ans ? styles[ans.answer] || "" : ""} ${canAccess ? styles["clickable"] : ""} ${currentIndex === i ? styles["active-col"] : ""}`}
                         onClick={() => canAccess && onJumpTo(i)}
                         >
                         {ans?.answer === "yes" ? <Check size={16} strokeWidth={4} /> : ans?.answer === "no" ? <X size={16} strokeWidth={4} /> : "-"}
@@ -51,7 +52,7 @@ export default function MatrixView({
                 </tbody>
             </table>
         </div>
-        <div className="matrix-hint">※解答済みの番号をタップすると修正できます</div>
+        <div className={styles["matrix-hint"]}>※回答済みの番号をタップすると修正できます</div>
     </div>
   );
 }

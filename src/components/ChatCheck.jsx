@@ -5,7 +5,9 @@ import ProgressHeader from "./check/ProgressHeader";
 import QuestionCard from "./check/QuestionCard";
 import AnswerControls from "./check/AnswerControls";
 import MatrixView from "./check/MatrixView";
+import ConfirmModal from "./common/ConfirmModal";
 import logger from "../utils/logger";
+import styles from "./ChatCheck.module.css";
 
 /**
  * チェック実行画面（メインチェック画面）
@@ -15,7 +17,8 @@ export default function ChatCheck({ onComplete, onExit }) {
   const { 
     session, 
     updateAnswer, 
-    goToIndex 
+    goToIndex,
+    answerMap
   } = useCheckSession();
 
   const [currentInputs, setCurrentInputs] = useState({});
@@ -29,22 +32,22 @@ export default function ChatCheck({ onComplete, onExit }) {
 
   const currentItem = allItems[currentIndex];
 
-  const [prevId, setPrevId] = useState(currentItem?.id);
+  // currentItem が変わった際に入力値を同期する
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- answerMap を依存に含めると回答のたびにリセットされるため意図的に除外
+  useEffect(() => {
+    if (currentItem) {
+      const existing = answerMap.get(currentItem.id);
+      setCurrentInputs(existing?.inputs || {});
+      setAnimKey(prev => prev + 1);
+      logger.debug("Current item changed (Reset state)", { 
+        index: currentIndex, 
+        id: currentItem.id, 
+        hasExistingAnswer: !!existing 
+      });
+    }
+  }, [currentItem?.id]);
 
-  // currentItemが変わった際に入力値を同期する (cascading renderを避けるためレンダリング中に実行)
-  if (currentItem && currentItem.id !== prevId) {
-    setPrevId(currentItem.id);
-    const existing = answers.find(a => a.itemId === currentItem.id);
-    setCurrentInputs(existing?.inputs || {});
-    setAnimKey(prev => prev + 1);
-    logger.debug("Current item changed (Reset state)", { 
-      index: currentIndex, 
-      id: currentItem.id, 
-      hasExistingAnswer: !!existing 
-    });
-  }
-
-  const handleHandleAnswer = (answer) => {
+  const handleAnswer = (answer) => {
     // 振動フィードバック
     if (navigator.vibrate) {
       navigator.vibrate(30);
@@ -71,7 +74,7 @@ export default function ChatCheck({ onComplete, onExit }) {
   }, [currentItem, currentInputs]);
 
   return (
-    <div className="check-screen">
+    <div className={styles["check-screen"]}>
       <ProgressHeader 
         currentItem={currentItem}
         progress={progress}
@@ -82,12 +85,12 @@ export default function ChatCheck({ onComplete, onExit }) {
       <MatrixView 
         allItems={allItems}
         currentIndex={currentIndex}
-        answers={answers}
+        answerMap={answerMap}
         onJumpTo={handleJumpTo}
       />
 
       {currentIndex < TOTAL_ITEMS && currentItem ? (
-        <div className="check-body fixed-layout-body">
+        <div className={`${styles["check-content"]} ${styles["fixed-layout"]}`}>
             <QuestionCard 
                 currentItem={currentItem}
                 currentIndex={currentIndex}
@@ -100,7 +103,7 @@ export default function ChatCheck({ onComplete, onExit }) {
             <AnswerControls 
                 currentIndex={currentIndex}
                 isInputIncomplete={isInputIncomplete}
-                onAnswer={handleHandleAnswer}
+                onAnswer={handleAnswer}
                 onBack={handleBack}
                 onComplete={() => onComplete(session)}
                 showCompleteBtn={answers.length === TOTAL_ITEMS}
@@ -110,19 +113,19 @@ export default function ChatCheck({ onComplete, onExit }) {
 
       {/* 中断確認ダイアログ */}
       {showExitConfirm && (
-        <div className="modal-overlay" onClick={() => setShowExitConfirm(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h2 className="modal-title">チェックを中断しますか？</h2>
-            <p className="modal-message">
+        <ConfirmModal
+          title="チェックを中断しますか？"
+          message={
+            <>
               現在の進捗は自動的に保存されます。<br />
               後からトップ画面で続きから再開できます。
-            </p>
-            <div className="modal-actions">
-              <button className="btn btn-secondary btn-sm" onClick={() => setShowExitConfirm(false)}>続ける</button>
-              <button className="btn btn-warning btn-sm" onClick={onExit}>中断する</button>
-            </div>
-          </div>
-        </div>
+            </>
+          }
+          confirmLabel="中断する"
+          confirmVariant="warning"
+          onConfirm={onExit}
+          onCancel={() => setShowExitConfirm(false)}
+        />
       )}
     </div>
   );

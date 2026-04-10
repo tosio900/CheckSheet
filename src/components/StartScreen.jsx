@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { loadUserProfile, saveUserProfile } from "../utils/storage";
 import { CheckCircle, ArrowLeft } from "lucide-react";
+import styles from "./StartScreen.module.css";
 
 /**
  * チェック開始画面コンポーネント
  * 現場名・点検者名・日付を入力する
  */
-// ... (中略) ...
 export default function StartScreen({ onStart, onBack }) {
   const profile = loadUserProfile() || {};
 
@@ -40,13 +40,13 @@ export default function StartScreen({ onStart, onBack }) {
   };
 
   return (
-    <div className="start-screen">
-      <div className="start-header">
+    <div className={styles["start-screen"]}>
+      <div className={styles["start-header"]}>
         <h1>チェック情報入力</h1>
         <p>チェックを開始するための情報を入力してください</p>
       </div>
 
-      <form className="start-form" onSubmit={handleSubmit}>
+      <form className={styles["start-form"]} onSubmit={handleSubmit}>
         {/* 現場名 */}
         <div className="form-group">
           <label className="form-label" htmlFor="input-site-name">
@@ -87,12 +87,12 @@ export default function StartScreen({ onStart, onBack }) {
           {errors.inspector && <p className="form-error">{errors.inspector}</p>}
         </div>
 
-        {/* 日付入力は廃止 */}
+
 
         {/* 備考・メモ（任意） */}
         <div className="form-group">
           <label className="form-label" htmlFor="input-memo">
-            メモ・特記事項 <span style={{fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: "normal"}}>(任意)</span>
+            メモ・特記事項 <span className="form-label-optional">(任意)</span>
           </label>
           <textarea
             id="input-memo"
@@ -106,7 +106,7 @@ export default function StartScreen({ onStart, onBack }) {
         </div>
 
         {/* アクションボタン */}
-        <div className="start-actions">
+        <div className={styles["start-actions"]}>
           <button
             type="submit"
             className="btn btn-primary btn-lg btn-block"

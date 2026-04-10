@@ -58,7 +58,6 @@ export async function generatePDF(element, sessionData) {
     return true;
   } catch (error) {
     logger.error("PDF生成失敗", error);
-    alert("PDF出力に失敗しました。もう一度お試しください。");
-    return false;
+    throw error;
   }
 }

@@ -5,6 +5,8 @@ import ChatCheck from "./components/ChatCheck";
 import ResultScreen from "./components/ResultScreen";
 import InstallPrompt from "./components/InstallPrompt";
 import { useCheckSession } from "./hooks/useCheckSession";
+import { getAllItems } from "./data/checkItems";
+import { SCREENS } from "./constants/screens";
 import logger from "./utils/logger";
 
 /**
@@ -12,7 +14,7 @@ import logger from "./utils/logger";
  * 画面ルーティングと全体の調整を行う
  */
 export default function App() {
-  const [screen, setScreen] = useState("home");
+  const [screen, setScreen] = useState(SCREENS.HOME);
   const { 
     session, 
     resumeSession, 
@@ -21,7 +23,8 @@ export default function App() {
     updateMemo,
     completeSession,
     resetAll,
-    refreshResumeSession
+    refreshResumeSession,
+    goToIndex
   } = useCheckSession();
 
   /**
@@ -31,7 +34,7 @@ export default function App() {
     if (forceNew) {
       resetAll();
     }
-    setScreen("start");
+    setScreen(SCREENS.START);
     logger.debug("Navigation: home -> start");
   };
 
@@ -42,7 +45,7 @@ export default function App() {
     if (resumeSession) {
       logger.info("Resuming session", resumeSession.checkId);
       resumeActiveSession();
-      setScreen("check");
+      setScreen(SCREENS.CHECK);
     }
   };
 
@@ -51,7 +54,7 @@ export default function App() {
    */
   const handleCheckStart = ({ siteName, inspector, memo }) => {
     startNewSession({ siteName, inspector, memo });
-    setScreen("check");
+    setScreen(SCREENS.CHECK);
     logger.info("Check started", { siteName, inspector });
     logger.debug("Navigation: start -> check");
   };
@@ -62,14 +65,26 @@ export default function App() {
   const handleComplete = (completedSession) => {
     logger.info("Check completed", completedSession.checkId);
     completeSession(completedSession);
-    setScreen("result");
+    setScreen(SCREENS.RESULT);
   };
 
   /**
    * 結果画面から特定の質問を修正するために戻る
    */
   const handleEditFromResult = (editIndex) => {
-    setScreen("check");
+    // editIndex は session.answers 配列内のインデックス
+    // goToIndex が期待するのは allItems 配列上の通し番号なので変換が必要
+    if (editIndex >= 0 && session?.answers?.[editIndex]) {
+      const allItems = getAllItems();
+      const targetItemId = session.answers[editIndex].itemId;
+      const itemIndex = allItems.findIndex(item => item.id === targetItemId);
+      if (itemIndex >= 0) {
+        goToIndex(itemIndex);
+      } else {
+        logger.warn("Edit target item not found in allItems", { editIndex, targetItemId });
+      }
+    }
+    setScreen(SCREENS.CHECK);
     logger.debug("Returning to check screen for edit", { index: editIndex });
   };
 
@@ -86,7 +101,7 @@ export default function App() {
   const handleExit = () => {
     logger.info("Check interrupted, returning to home");
     refreshResumeSession();
-    setScreen("home");
+    setScreen(SCREENS.HOME);
   };
 
   /**
@@ -94,7 +109,7 @@ export default function App() {
    */
   const handleRestart = () => {
     resetAll();
-    setScreen("start");
+    setScreen(SCREENS.START);
     logger.debug("Restarting check session");
   };
 
@@ -103,7 +118,7 @@ export default function App() {
    */
   const handleGoHome = () => {
     resetAll();
-    setScreen("home");
+    setScreen(SCREENS.HOME);
     logger.debug("Returning to home screen");
   };
 
@@ -111,7 +126,7 @@ export default function App() {
     <div className="app">
       <InstallPrompt />
 
-      {screen === "home" && (
+      {screen === SCREENS.HOME && (
         <HomeScreen
           onStartNew={handleStartNew}
           onResume={handleResume}
@@ -119,24 +134,24 @@ export default function App() {
         />
       )}
 
-      {screen === "start" && (
+      {screen === SCREENS.START && (
         <StartScreen
           onStart={handleCheckStart}
           onBack={() => {
             refreshResumeSession();
-            setScreen("home");
+            setScreen(SCREENS.HOME);
           }}
         />
       )}
 
-      {screen === "check" && session && (
+      {screen === SCREENS.CHECK && session && (
         <ChatCheck
           onComplete={handleComplete}
           onExit={handleExit}
         />
       )}
 
-      {screen === "result" && session && (
+      {screen === SCREENS.RESULT && session && (
         <ResultScreen
           onRestart={handleRestart}
           onGoHome={handleGoHome}

@@ -1,4 +1,5 @@
 import { CheckCircle, XCircle, ChevronLeft, Lightbulb } from "lucide-react";
+import styles from "../ChatCheck.module.css";
 
 export default function AnswerControls({ 
   currentIndex, 
@@ -9,36 +10,35 @@ export default function AnswerControls({
   showCompleteBtn 
 }) {
   return (
-    <div className="answer-area fixed-bottom">
+    <div className={`${styles["answer-area"]} ${styles["fixed-bottom"]}`}>
       {/* バリデーションメッセージ */}
       {isInputIncomplete && (
-        <div className="validation-message" style={{ color: "var(--color-danger)", fontSize: "var(--font-size-xs)", fontWeight: "bold", textAlign: "center", marginBottom: "var(--space-2)", animation: "fadeIn 0.2s ease" }}>
-          <Lightbulb size={12} style={{ marginRight: 4, verticalAlign: 'middle' }} />
+        <div className={styles["validation-message"]}>
+          <Lightbulb size={12} className={styles["validation-icon"]} />
           上の点名を入力すると「はい」が押せます
         </div>
       )}
       
-      <div className="answer-buttons">
+      <div className={styles["answer-buttons"]}>
         <button
-          className={`answer-btn answer-btn-yes ${isInputIncomplete ? "disabled" : ""}`}
+          className={`${styles["answer-btn"]} ${styles["answer-btn-yes"]} ${isInputIncomplete ? styles["disabled"] : ""}`}
           onClick={() => !isInputIncomplete && onAnswer("yes")}
           disabled={isInputIncomplete}
-          style={isInputIncomplete ? { opacity: 0.5, filter: "grayscale(1)", cursor: "not-allowed" } : {}}
         >
           <CheckCircle size={28} /> はい
         </button>
         <button
-          className="answer-btn answer-btn-no"
+          className={`${styles["answer-btn"]} ${styles["answer-btn-no"]}`}
           onClick={() => onAnswer("no")}
         >
           <XCircle size={28} /> いいえ
         </button>
       </div>
 
-      <div className="back-button-container" style={{ gap: "8px" }}>
+      <div className={styles["back-button-container"]}>
         {currentIndex > 0 ? (
           <button
-            className="btn btn-ghost btn-sm back-btn-with-icon"
+            className={`btn btn-ghost btn-sm ${styles["back-btn-with-icon"]}`}
             style={{ flex: 1 }}
             onClick={onBack}
           >
@@ -50,7 +50,7 @@ export default function AnswerControls({
 
         {showCompleteBtn && (
           <button
-            className="btn btn-primary btn-sm back-btn-with-icon"
+            className={`btn btn-primary btn-sm ${styles["back-btn-with-icon"]}`}
             style={{ flex: 1 }}
             onClick={onComplete}
           >

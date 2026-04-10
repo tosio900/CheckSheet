@@ -22,7 +22,7 @@ class ErrorBoundary extends React.Component {
 
   handleReset = () => {
     this.setState({ hasError: false, error: null });
-    window.location.href = "/"; // ホームに戻る
+    window.location.href = import.meta.env.BASE_URL || "/";
   };
 
   render() {

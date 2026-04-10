@@ -1,3 +1,5 @@
+import styles from "../ChatCheck.module.css";
+
 /**
  * 質問の各回答タイプに応じた表示を担当するコンポーネント
  */
@@ -5,10 +7,10 @@ export default function QuestionRenderer({ item, currentInputs, onInputChange })
   // 特定の追加入力（点名など）がある場合
   if (item.inputs) {
     return (
-      <div className="item-inputs-area" style={{ marginBottom: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+      <div className={styles["item-inputs-area"]}>
         {item.inputs.map((label, idx) => (
-          <div key={idx} className="item-input-group">
-            <label style={{ fontSize: "var(--font-size-xs)", fontWeight: "bold", color: "var(--color-text-secondary)", marginBottom: "4px", display: "block" }}>
+          <div key={idx} className={styles["item-input-group"]}>
+            <label>
               {label}
             </label>
             <input

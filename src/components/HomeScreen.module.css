@@ -1,0 +1,79 @@
+/* ============================================
+   ホーム画面
+   ============================================ */
+.home-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: var(--space-6);
+  animation: fadeIn var(--transition-slow) ease;
+}
+
+.home-logo {
+  width: 100px;
+  height: 100px;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+  border-radius: var(--radius-2xl);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  margin-bottom: var(--space-6);
+  box-shadow: var(--shadow-glow), var(--shadow-lg);
+  animation: float 3s ease-in-out infinite;
+}
+
+.home-title {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text);
+  text-align: center;
+  margin-bottom: var(--space-2);
+}
+
+.home-subtitle {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  text-align: center;
+  margin-bottom: var(--space-10);
+}
+
+.home-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  width: 100%;
+  max-width: 320px;
+}
+
+.home-resume-card {
+  background: var(--color-surface);
+  border: 2px solid var(--color-warning);
+  border-radius: var(--radius-xl);
+  padding: var(--space-5);
+  animation: fadeInUp 0.5s ease 0.2s both;
+}
+
+.home-resume-card h3 {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-warning);
+  margin-bottom: var(--space-2);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.home-resume-card p {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-3);
+}
+
+.home-resume-actions {
+  display: flex;
+  gap: var(--space-2);
+}

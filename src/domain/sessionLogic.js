@@ -44,9 +44,11 @@ export function calculateNextIndex(currentIndex, totalItems) {
 
 /**
  * セッションが完了状態か判定する
+ * ユニークな回答済み項目数で判定（重複回答があっても正確に判定）
  */
 export function isSessionCompleted(answers, totalItems) {
-  return answers.length === totalItems;
+  const uniqueItemIds = new Set(answers.map(a => a.itemId));
+  return uniqueItemIds.size >= totalItems;
 }
 
 /**

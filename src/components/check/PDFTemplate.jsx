@@ -4,6 +4,10 @@ import { TOTAL_ITEMS } from "../../data/checkItems";
 /**
  * PDF出力用のテンプレートコンポーネント
  * 画面には表示されないが、html2canvasでキャプチャされる
+ * 
+ * 注意: このコンポーネントのスタイルは意図的にインラインで記述している。
+ * html2canvas は外部CSSの解釈が不完全な場合があるため、
+ * レイアウトの正確なキャプチャにはインラインスタイルが最も信頼性が高い。
  */
 const PDFTemplate = React.forwardRef(({ session, categorizedAnswers, yesCount, noCount }, ref) => {
   return (

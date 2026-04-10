@@ -1,0 +1,300 @@
+/* ============================================
+   チェック実行画面
+   ============================================ */
+.check-screen {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  /* 画面全体のスクロールを禁止 */
+}
+
+/* ヘッダー位置固定化 */
+.check-header.fixed-header {
+  flex-shrink: 0;
+  background: var(--color-bg-gradient);
+  z-index: 10;
+  padding: var(--space-3) var(--space-4) var(--space-2);
+}
+
+.check-header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-3);
+}
+
+.check-header-title {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+
+.check-header-close {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: var(--color-border-light);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  transition: all var(--transition-fast);
+}
+
+.check-header-close:hover {
+  background: var(--color-border);
+  color: var(--color-text);
+}
+
+/* プログレス（進捗）バー周辺 */
+.progress-container {
+  margin-top: var(--space-2);
+  margin-bottom: var(--space-2);
+  height: 38px;
+  /* 完全固定高さ：タイトル(約20px) + バー(約14px) + 余白 */
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.progress-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.progress-category {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-primary-dark);
+  white-space: nowrap;
+  /* 改行させない */
+  overflow: hidden;
+  /* はみ出し分を隠す */
+  text-overflow: ellipsis;
+  /* ... で省略表示 */
+  max-width: 75%;
+  /* カウント表示のスペースを確保 */
+}
+
+.progress-count {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-bold);
+  white-space: nowrap;
+}
+
+.progress-bar-track {
+  width: 100%;
+  height: 6px;
+  background: var(--color-border-light);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  margin-top: auto;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: var(--color-primary);
+  border-radius: var(--radius-full);
+  transition: width 0.3s ease;
+}
+
+/* 質問カード領域（高さ固定・内容が長い場合のみカード内スクロール） */
+.check-content.fixed-layout {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  /* 上部に固定 */
+  padding: var(--space-4) var(--space-4) 0 var(--space-4);
+  /* 下から余白を削る */
+  overflow-y: auto;
+  /* 万が一画面が小さい場合のみスクロール */
+}
+
+/* 質問カード */
+.question-card {
+  background: var(--color-surface);
+  border-radius: var(--radius-2xl);
+  padding: var(--space-6);
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--color-border-light);
+  margin: 0;
+  /* マージンを消して上部にピッタリ寄せる */
+}
+
+.question-number {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary-dark);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: var(--space-3);
+}
+
+.question-text {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  line-height: 1.5;
+  margin-bottom: var(--space-4);
+}
+
+/* 備考セクション（常時表示用） */
+.note-card {
+  background: #fffbeb;
+  /* 黄色っぽい背景 */
+  border: 1px solid #fde68a;
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  margin-top: var(--space-2);
+}
+
+.note-card-title {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  color: #b45309;
+  margin-bottom: var(--space-2);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.note-card-content {
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  line-height: 1.6;
+}
+
+/* 回答ボタンエリア（常に画面下部に固定） */
+.answer-area.fixed-bottom {
+  flex-shrink: 0;
+  padding: 0 var(--space-4) var(--space-4);
+  background: var(--color-bg-gradient);
+  /* 背景と同じグラデーションで自然に */
+}
+
+.answer-buttons {
+  display: flex;
+  gap: var(--space-3);
+  margin-bottom: var(--space-2);
+}
+
+.answer-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  font-family: var(--font-family);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  min-height: 64px;
+  border: 3px solid transparent;
+  border-radius: var(--radius-xl);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  -webkit-user-select: none;
+  user-select: none;
+  position: relative;
+  overflow: hidden;
+}
+
+.answer-btn:active {
+  transform: scale(0.95);
+}
+
+.answer-btn:focus-visible {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.answer-btn-yes {
+  background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+  color: #065f46;
+  border-color: #a7f3d0;
+}
+
+.answer-btn-yes:hover {
+  background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+  transform: translateY(-2px);
+}
+
+.answer-btn-no {
+  background: linear-gradient(135deg, #fef2f2, #fee2e2);
+  color: #991b1b;
+  border-color: #fecaca;
+}
+
+.answer-btn-no:hover {
+  background: linear-gradient(135deg, #fee2e2, #fecaca);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+  transform: translateY(-2px);
+}
+
+/* 戻るボタンのコンテナ（高さ固定用） */
+.back-button-container {
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.back-btn-with-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.back-button-placeholder {
+  height: 36px;
+}
+
+/* ============================================
+   バリデーションメッセージ
+   ============================================ */
+.validation-message {
+  color: var(--color-danger);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  text-align: center;
+  margin-bottom: var(--space-2);
+  animation: fadeIn 0.2s ease;
+}
+
+.validation-message .validation-icon {
+  margin-right: 4px;
+  vertical-align: middle;
+}
+
+/* 回答ボタンの無効状態 */
+.answer-btn.disabled {
+  opacity: 0.5;
+  filter: grayscale(1);
+  cursor: not-allowed;
+}
+
+/* ============================================
+   質問入力エリア
+   ============================================ */
+.item-inputs-area {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.item-input-group label {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-secondary);
+  margin-bottom: 4px;
+  display: block;
+}

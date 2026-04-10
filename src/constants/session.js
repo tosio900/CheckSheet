@@ -11,9 +11,3 @@ export const STORAGE_KEYS = {
   SESSION: "survey_check_session",
   USER_PROFILE: "survey_user_profile",
 };
-
-export const DEFAULT_SESSION = {
-  currentIndex: 0,
-  answers: [],
-  memo: "",
-};

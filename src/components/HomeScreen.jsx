@@ -1,5 +1,8 @@
 import { useState } from "react";
 import { ClipboardList, AlertTriangle, PenTool } from "lucide-react";
+import { TOTAL_ITEMS } from "../data/checkItems";
+import ConfirmModal from "./common/ConfirmModal";
+import styles from "./HomeScreen.module.css";
 
 /**
  * ホーム画面コンポーネント
@@ -10,33 +13,36 @@ export default function HomeScreen({ onStartNew, onResume, resumeSession }) {
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
 
   return (
-    <div className="home-screen">
+    <div className={styles["home-screen"]}>
       {/* ロゴ */}
-      <div className="home-logo" aria-hidden="true">
+      <div className={styles["home-logo"]} aria-hidden="true">
         <ClipboardList size={48} strokeWidth={1.5} color="white" />
       </div>
 
       {/* タイトル */}
-      <h1 className="home-title">測量前チェック</h1>
-      <p className="home-subtitle">
+      <h1 className={styles["home-title"]}>測量前チェック</h1>
+      <p className={styles["home-subtitle"]}>
         テンポ良く確実に現場チェック
       </p>
 
       {/* アクションボタン */}
-      <div className="home-actions">
+      <div className={styles["home-actions"]}>
         {/* 中断中セッションがある場合 */}
         {resumeSession && (
-          <div className="home-resume-card">
+          <div className={styles["home-resume-card"]}>
             <h3><AlertTriangle color="var(--color-warning)" size={16} /> 中断中のチェックがあります</h3>
             <p>
               現場名: {resumeSession.siteName}
               <br />
-              進捗: {resumeSession.answers.length}/43項目
+              進捗: {resumeSession.answers.length}/{TOTAL_ITEMS}項目
               <br />
-              日付: {resumeSession.date}
+              日付: {resumeSession.startedAt
+                ? new Date(resumeSession.startedAt).toLocaleDateString("ja-JP")
+                : "-"}
             </p>
-            <div className="home-resume-actions">
+            <div className={styles["home-resume-actions"]}>
               <button
+                // グローバルなボタンスタイルはそのまま
                 className="btn btn-warning btn-sm"
                 onClick={onResume}
                 id="btn-resume"
@@ -66,33 +72,23 @@ export default function HomeScreen({ onStartNew, onResume, resumeSession }) {
 
       {/* 破棄確認ダイアログ */}
       {showDiscardConfirm && (
-        <div className="modal-overlay" onClick={() => setShowDiscardConfirm(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h2 className="modal-title">確認</h2>
-            <p className="modal-message">
+        <ConfirmModal
+          title="確認"
+          message={
+            <>
               中断中のチェックデータを破棄して、新しくチェックを開始しますか？
               <br />
               <strong>この操作は元に戻せません。</strong>
-            </p>
-            <div className="modal-actions">
-              <button
-                className="btn btn-secondary btn-sm"
-                onClick={() => setShowDiscardConfirm(false)}
-              >
-                キャンセル
-              </button>
-              <button
-                className="btn btn-danger btn-sm"
-                onClick={() => {
-                  setShowDiscardConfirm(false);
-                  onStartNew(true); // 強制的に新規開始（既存セッション破棄）
-                }}
-              >
-                破棄して開始
-              </button>
-            </div>
-          </div>
-        </div>
+            </>
+          }
+          confirmLabel="破棄して開始"
+          confirmVariant="danger"
+          onConfirm={() => {
+            setShowDiscardConfirm(false);
+            onStartNew(true); // 強制的に新規開始（既存セッション破棄）
+          }}
+          onCancel={() => setShowDiscardConfirm(false)}
+        />
       )}
     </div>
   );

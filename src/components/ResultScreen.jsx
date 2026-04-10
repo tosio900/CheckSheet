@@ -5,13 +5,15 @@ import { useCheckSession } from "../hooks/useCheckSession";
 import { CheckCircle, XCircle, FileText, RotateCcw, Home, BadgeCheck } from "lucide-react";
 import PDFTemplate from "./check/PDFTemplate";
 import logger from "../utils/logger";
+import styles from "./ResultScreen.module.css";
 
 /**
  * 結果確認画面コンポーネント
  */
 export default function ResultScreen({ onRestart, onGoHome, onEdit, onUpdateMemo }) {
-  const { session, yesCount, noCount } = useCheckSession();
+  const { session, yesCount, noCount, answerMap } = useCheckSession();
   const [isPdfGenerating, setIsPdfGenerating] = useState(false);
+  const [pdfError, setPdfError] = useState(null);
   const pdfRef = useRef(null);
 
   /**
@@ -20,7 +22,7 @@ export default function ResultScreen({ onRestart, onGoHome, onEdit, onUpdateMemo
   const categorizedAnswers = useMemo(() => {
     return categories.map((cat) => {
       const catAnswers = cat.items.map((item) => {
-        const answer = session.answers.find((a) => a.itemId === item.id);
+        const answer = answerMap.get(item.id);
         return {
           ...item,
           answer: answer ? answer.answer : null,
@@ -32,7 +34,7 @@ export default function ResultScreen({ onRestart, onGoHome, onEdit, onUpdateMemo
         answers: catAnswers,
       };
     });
-  }, [session.answers]);
+  }, [answerMap]);
 
   /**
    * PDF出力ハンドラ
@@ -41,6 +43,7 @@ export default function ResultScreen({ onRestart, onGoHome, onEdit, onUpdateMemo
     if (!pdfRef.current || isPdfGenerating) return;
 
     setIsPdfGenerating(true);
+    setPdfError(null);
     try {
       // 日付フォーマット調整
       const dateStr = session.completedAt ? new Date(session.completedAt).toLocaleDateString("ja-JP").replace(/\//g, "") : "";
@@ -50,31 +53,32 @@ export default function ResultScreen({ onRestart, onGoHome, onEdit, onUpdateMemo
       logger.info("PDF export successful");
     } catch (error) {
       logger.error("PDF generation failed", error, { checkId: session.checkId });
+      setPdfError("PDF出力に失敗しました。もう一度お試しください。");
     } finally {
       setIsPdfGenerating(false);
     }
   };
 
   return (
-    <div className="result-screen">
-      <div className="result-header">
-        <div className="result-icon"><BadgeCheck size={64} color="var(--color-primary)" /></div>
+    <div className={styles["result-screen"]}>
+      <div className={styles["result-header"]}>
+        <div className={styles["result-icon"]}><BadgeCheck size={64} color="var(--color-primary)" /></div>
         <h1>チェック完了！</h1>
         <p>{TOTAL_ITEMS}項目すべてのチェックが完了しました</p>
       </div>
 
-      <div className="result-info-card">
-        <div className="result-info-row">
-          <span className="result-info-label">現場名</span>
-          <span className="result-info-value">{session.siteName}</span>
+      <div className={styles["result-info-card"]}>
+        <div className={styles["result-info-row"]}>
+          <span className={styles["result-info-label"]}>現場名</span>
+          <span className={styles["result-info-value"]}>{session.siteName}</span>
         </div>
-        <div className="result-info-row">
-          <span className="result-info-label">点検者</span>
-          <span className="result-info-value">{session.inspector}</span>
+        <div className={styles["result-info-row"]}>
+          <span className={styles["result-info-label"]}>点検者</span>
+          <span className={styles["result-info-value"]}>{session.inspector}</span>
         </div>
-        <div className="result-info-row">
-          <span className="result-info-label">実施日時</span>
-          <span className="result-info-value">
+        <div className={styles["result-info-row"]}>
+          <span className={styles["result-info-label"]}>実施日時</span>
+          <span className={styles["result-info-value"]}>
             {session.completedAt ? new Date(session.completedAt).toLocaleString("ja-JP") : "-"}
           </span>
         </div>
@@ -91,35 +95,35 @@ export default function ResultScreen({ onRestart, onGoHome, onEdit, onUpdateMemo
         />
       </div>
 
-      <div className="result-summary">
-        <div className="summary-card yes">
-          <div className="summary-count">{yesCount}</div>
-          <div className="summary-label">はい</div>
+      <div className={styles["result-summary"]}>
+        <div className={`${styles["summary-card"]} ${styles.yes}`}>
+          <div className={styles["summary-count"]}>{yesCount}</div>
+          <div className={styles["summary-label"]}>はい</div>
         </div>
-        <div className="summary-card no">
-          <div className="summary-count">{noCount}</div>
-          <div className="summary-label">いいえ</div>
+        <div className={`${styles["summary-card"]} ${styles.no}`}>
+          <div className={styles["summary-count"]}>{noCount}</div>
+          <div className={styles["summary-label"]}>いいえ</div>
         </div>
       </div>
 
-      <div className="result-list">
+      <div className={styles["result-list"]}>
         {categorizedAnswers.map((cat) => (
-          <div key={cat.id} className="result-category">
-            <div className="result-category-header">{cat.name}</div>
-            <div className="result-category-hint">※項目をタップして修正</div>
+          <div key={cat.id} className={styles["result-category"]}>
+            <div className={styles["result-category-header"]}>{cat.name}</div>
+            <div className={styles["result-category-hint"]}>※項目をタップして修正</div>
             {cat.answers.map((item) => (
               <div 
                 key={item.id} 
-                className="result-item"
+                className={styles["result-item"]}
                 onClick={() => onEdit(session.answers.findIndex(a => a.itemId === item.id))}
               >
-                <div className={`result-item-icon ${item.answer}`}>
+                <div className={`${styles["result-item-icon"]} ${styles[item.answer] || ""}`}>
                   {item.answer === "yes" ? <CheckCircle size={18} /> : <XCircle size={18} />}
                 </div>
-                <div className="result-item-text">
+                <div className={styles["result-item-text"]}>
                   <div>{item.question}</div>
                   {item.inputs && (
-                    <div className="result-item-inputs">
+                    <div className={styles["result-item-inputs"]}>
                       {Object.entries(item.inputs).map(([k, v]) => `${k}: ${v || '未入力'}`).join(' / ')}
                     </div>
                   )}
@@ -133,10 +137,15 @@ export default function ResultScreen({ onRestart, onGoHome, onEdit, onUpdateMemo
         ))}
       </div>
 
-      <div className="result-actions">
+      <div className={styles["result-actions"]}>
         <button className="btn btn-primary btn-lg btn-block" onClick={handlePdfExport} disabled={isPdfGenerating}>
           {isPdfGenerating ? <span className="loading-spinner">PDF生成中...</span> : <><FileText size={20} /> PDF出力</>}
         </button>
+        {pdfError && (
+          <div className="pdf-error-message">
+            {pdfError}
+          </div>
+        )}
         <button className="btn btn-secondary btn-block" onClick={onRestart}><RotateCcw size={18} /> もう一度チェック</button>
         <button className="btn btn-ghost btn-block" onClick={onGoHome}><Home size={18} /> ホームに戻る</button>
       </div>

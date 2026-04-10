@@ -51,14 +51,6 @@ export function clearCheckSession() {
   }
 }
 
-/**
- * 中断中（未完了）のセッションが存在するか確認
- * @returns {boolean}
- */
-export function hasInProgressSession() {
-  const session = loadCheckSession();
-  return session !== null && session.status === "in_progress";
-}
 
 /**
  * 新しいチェックIDを生成
@@ -71,7 +63,7 @@ export function generateCheckId() {
   return `chk_${dateStr}_${timeStr}`;
 }
 
-const PROFILE_KEY = "survey_user_profile";
+
 
 /**
  * ユーザーの入力履歴（現場名、点検者）を保存

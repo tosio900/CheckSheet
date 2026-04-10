@@ -121,8 +121,9 @@ export function CheckSessionProvider({ children }) {
   }, []);
 
   // セッションが更新されるたびにLocalStorageに保存
+  // 完了後のメモ編集やPDF出力前のデータ保全のため、ステータスに関わらず保存する
   useEffect(() => {
-    if (state.session && state.session.status === SESSION_STATUS.IN_PROGRESS) {
+    if (state.session) {
       try {
         saveCheckSession(state.session);
       } catch (err) {
