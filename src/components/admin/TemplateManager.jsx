@@ -27,6 +27,7 @@ export default function TemplateManager({ onBack, onEditTemplate }) {
   
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null); // id
   const [isImporting, setIsImporting] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
 
   // 新規テンプレート作成
   const handleCreateNew = async () => {
@@ -71,8 +72,7 @@ export default function TemplateManager({ onBack, onEditTemplate }) {
   };
 
   // インポート (JSON)
-  const handleImport = (e) => {
-    const file = e.target.files[0];
+  const processImportFile = (file) => {
     if (!file) return;
 
     setIsImporting(true);
@@ -102,14 +102,44 @@ export default function TemplateManager({ onBack, onEditTemplate }) {
         alert("インポートに失敗しました");
       } finally {
         setIsImporting(false);
-        e.target.value = ""; // reset
       }
     };
     reader.readAsText(file);
   };
 
+  const handleImport = (e) => {
+    processImportFile(e.target.files[0]);
+    e.target.value = ""; // reset
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files[0];
+    if (file && file.name.endsWith('.json')) {
+      processImportFile(file);
+    } else if (file) {
+      alert('JSONファイルのみ対応しています。');
+    }
+  };
+
   return (
-    <div className={styles.container}>
+    <div 
+      className={`${styles.container} ${isDragging ? styles.dragging : ""}`}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
       {/* ヘッダー */}
       <header className={styles.header}>
         <button className={styles["back-btn"]} onClick={onBack}>
@@ -143,13 +173,15 @@ export default function TemplateManager({ onBack, onEditTemplate }) {
               </div>
 
               <div className={styles.actions}>
-                <button 
-                  className={styles["icon-btn"]} 
-                  title="編集" 
-                  onClick={() => onEditTemplate(template)}
-                >
-                  <FileEdit size={18} />
-                </button>
+                {template.id !== "default" && (
+                  <button 
+                    className={styles["icon-btn"]} 
+                    title="編集" 
+                    onClick={() => onEditTemplate(template)}
+                  >
+                    <FileEdit size={18} />
+                  </button>
+                )}
                 <button 
                   className={styles["icon-btn"]} 
                   title="エクスポート" 

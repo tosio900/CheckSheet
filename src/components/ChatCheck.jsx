@@ -91,15 +91,20 @@ export default function ChatCheck({ onComplete, onExit, isEditingAfterComplete }
     goToIndex(index);
   };
 
-  // バリデーション計算（入力値が未入力の間は「はい」を押せないようにする判定）
-  const isInputIncomplete = currentItem?.inputs 
-    ? currentItem.inputs.some(label => !currentInputs[label] || currentInputs[label].trim() === "")
-    : false;
-
   // 現在の項目に紐づく画像IDリスト
   const currentImageIds = currentItem 
     ? getItemImageIds(session.images, currentItem.id) 
     : [];
+
+  // バリデーション計算（入力値や写真が不足している場合は「はい」を押せないようにする判定）
+  const missingInputs = currentItem?.inputs 
+    ? currentItem.inputs.filter(label => !currentInputs[label] || currentInputs[label].trim() === "")
+    : [];
+
+  const isTextIncomplete = missingInputs.length > 0;
+  const isPhotoMissing = !!currentItem?.requiredPhoto && currentImageIds.length === 0;
+  
+  const isInputIncomplete = isTextIncomplete || isPhotoMissing;
 
   return (
     <div className={styles["check-screen"]}>
@@ -134,6 +139,8 @@ export default function ChatCheck({ onComplete, onExit, isEditingAfterComplete }
           <AnswerControls 
               currentIndex={currentIndex}
               isInputIncomplete={isInputIncomplete}
+              missingInputs={missingInputs}
+              isPhotoMissing={isPhotoMissing}
               onAnswer={handleAnswer}
               onBack={handleBack}
               onComplete={() => onComplete()}

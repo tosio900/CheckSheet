@@ -3,19 +3,32 @@ import styles from "../ChatCheck.module.css";
 
 export default function AnswerControls({ 
   currentIndex, 
-  isInputIncomplete, 
+  isInputIncomplete,
+  missingInputs = [],
+  isPhotoMissing = false,
   onAnswer, 
   onBack, 
   onComplete, 
   showCompleteBtn 
 }) {
+  let validationMessage = "";
+  if (isInputIncomplete) {
+    if (missingInputs.length > 0 && isPhotoMissing) {
+      validationMessage = "写真の添付と入力項目の入力が必要です";
+    } else if (isPhotoMissing) {
+      validationMessage = "写真を添付してください";
+    } else if (missingInputs.length > 0) {
+      validationMessage = `「${missingInputs[0]}」を入力してください`;
+    }
+  }
+
   return (
     <div className={`${styles["answer-area"]} ${styles["fixed-bottom"]}`}>
       {/* バリデーションメッセージ */}
-      {isInputIncomplete && (
+      {isInputIncomplete && validationMessage && (
         <div className={styles["validation-message"]}>
           <Lightbulb size={12} className={styles["validation-icon"]} />
-          上の点名を入力すると「はい」が押せます
+          {validationMessage}
         </div>
       )}
       

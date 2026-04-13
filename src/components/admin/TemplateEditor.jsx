@@ -48,7 +48,7 @@ export default function TemplateEditor({ template, onBack, onSave }) {
           ...cat,
           items: [
             ...cat.items,
-            { id: "item_" + Date.now(), question: "新しい質問項目", note: "", inputs: null }
+            { id: "item_" + Date.now(), question: "新しい質問項目", note: "", inputs: null, requiredPhoto: false }
           ]
         };
       })
@@ -86,8 +86,8 @@ export default function TemplateEditor({ template, onBack, onSave }) {
     }));
   };
 
-  // 入力フィールド（点名など）のトグル
-  const toggleInputs = (catId, itemId) => {
+  // 入力枠の追加
+  const addInput = (catId, itemId) => {
     setEditedTemplate(prev => ({
       ...prev,
       categories: prev.categories.map(cat => {
@@ -96,8 +96,63 @@ export default function TemplateEditor({ template, onBack, onSave }) {
           ...cat,
           items: cat.items.map(i => {
             if (i.id !== itemId) return i;
-            // null or array
-            return { ...i, inputs: i.inputs ? null : ["点名1", "点名2"] };
+            const currentInputs = i.inputs || [];
+            return { ...i, inputs: [...currentInputs, `入力枠${currentInputs.length + 1}`] };
+          })
+        };
+      })
+    }));
+  };
+
+  // 入力枠名の更新
+  const updateInputName = (catId, itemId, inputIdx, newName) => {
+    setEditedTemplate(prev => ({
+      ...prev,
+      categories: prev.categories.map(cat => {
+        if (cat.id !== catId) return cat;
+        return {
+          ...cat,
+          items: cat.items.map(i => {
+            if (i.id !== itemId) return i;
+            const nextInputs = [...(i.inputs || [])];
+            nextInputs[inputIdx] = newName;
+            return { ...i, inputs: nextInputs };
+          })
+        };
+      })
+    }));
+  };
+
+  // 入力枠の削除
+  const removeInput = (catId, itemId, inputIdx) => {
+    setEditedTemplate(prev => ({
+      ...prev,
+      categories: prev.categories.map(cat => {
+        if (cat.id !== catId) return cat;
+        return {
+          ...cat,
+          items: cat.items.map(i => {
+            if (i.id !== itemId) return i;
+            if (!i.inputs) return i;
+            const nextInputs = i.inputs.filter((_, idx) => idx !== inputIdx);
+            return { ...i, inputs: nextInputs.length > 0 ? nextInputs : null };
+          })
+        };
+      })
+    }));
+  };
+
+  // 写真必須のトグル
+  const toggleRequiredPhoto = (catId, itemId) => {
+    setEditedTemplate(prev => ({
+      ...prev,
+      categories: prev.categories.map(cat => {
+        if (cat.id !== catId) return cat;
+        return {
+          ...cat,
+          items: cat.items.map(i => {
+            if (i.id !== itemId) return i;
+            return { ...i, requiredPhoto: !i.requiredPhoto };
           })
         };
       })
@@ -173,18 +228,50 @@ export default function TemplateEditor({ template, onBack, onSave }) {
                     />
                   </div>
                   <div className={styles["item-meta"]}>
-                    <button 
-                        className={`${styles["toggle-btn"]} ${item.inputs ? styles.active : ""}`}
-                        onClick={() => toggleInputs(cat.id, item.id)}
-                    >
-                        <Settings2 size={14} /> {item.inputs ? "入力枠あり(点名1/2)" : "入力枠なし"}
-                    </button>
-                    <button 
-                      className={styles["item-del-btn"]}
-                      onClick={() => removeItem(cat.id, item.id)}
-                    >
-                      <Trash2 size={16} />
-                    </button>
+                    <div className={styles["item-meta-top"]}>
+                      <label className={styles["photo-required-label"]}>
+                        <input 
+                          type="checkbox" 
+                          checked={!!item.requiredPhoto}
+                          onChange={() => toggleRequiredPhoto(cat.id, item.id)}
+                        />
+                        写真必須
+                      </label>
+                      <button 
+                        className={styles["item-del-btn"]}
+                        onClick={() => removeItem(cat.id, item.id)}
+                        title="この項目を削除"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+
+                    <div className={styles["inputs-editor"]}>
+                      {item.inputs && item.inputs.map((inputName, idx) => (
+                        <div key={idx} className={styles["input-editor-row"]}>
+                          <input 
+                            type="text"
+                            value={inputName}
+                            onChange={(e) => updateInputName(cat.id, item.id, idx, e.target.value)}
+                            className={styles["input-name-field"]}
+                            placeholder={`入力枠${idx + 1}`}
+                          />
+                          <button 
+                            className={styles["input-del-btn"]}
+                            onClick={() => removeInput(cat.id, item.id, idx)}
+                            title="削除"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      ))}
+                      <button 
+                        className={styles["add-input-btn"]}
+                        onClick={() => addInput(cat.id, item.id)}
+                      >
+                        <Plus size={14} /> 入力枠を追加
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
