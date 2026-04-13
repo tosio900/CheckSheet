@@ -9,12 +9,12 @@ export default defineConfig(({ command }) => ({
     react(),
     VitePWA({
       registerType: 'autoUpdate', // 現場の負担ゼロ：バックグラウンドで自動更新
-      includeAssets: ['favicon.ico', 'icon-192x192.png', 'icon-512x512.png'],
+      includeAssets: ['favicon.svg', 'icon-192x192.png', 'icon-512x512.png'],
       manifest: {
         name: '測量前チェックシステム',
         short_name: '測量チェック',
         description: '測量現場で手軽に使えるチャット型チェックシート',
-        theme_color: '#12b886',
+        theme_color: '#059669',
         background_color: '#ebfbee',
         display: 'standalone', // フルスクリーン（ネイティブアプリ表示）
         icons: [

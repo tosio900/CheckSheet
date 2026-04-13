@@ -1,4 +1,4 @@
-import { createContext, useReducer, useEffect, useCallback, useMemo } from "react";
+import { createContext, useReducer, useState, useEffect, useCallback, useMemo } from "react";
 import {
   saveCheckSession,
   loadCheckSession,
@@ -16,6 +16,8 @@ const initialState = {
   session: null,
   resumeSession: null,
   isLoaded: false,
+  saveError: null, // LocalStorage保存失敗時のエラーメッセージ
+  syncWarning: null, // 他タブでのデータ更新警告
 };
 
 function sessionReducer(state, action) {
@@ -86,6 +88,11 @@ function sessionReducer(state, action) {
           completedAt: new Date().toISOString()
         }
       };
+    case "SET_SYNC_WARNING":
+      return {
+        ...state,
+        syncWarning: action.payload,
+      };
     case "RESET":
       return {
         ...state,
@@ -104,6 +111,7 @@ function sessionReducer(state, action) {
 
 export function CheckSessionProvider({ children }) {
   const [state, dispatch] = useReducer(sessionReducer, initialState);
+  const [saveError, setSaveError] = useState(null);
 
   // 初回読み込み
   useEffect(() => {
@@ -125,12 +133,42 @@ export function CheckSessionProvider({ children }) {
   useEffect(() => {
     if (state.session) {
       try {
-        saveCheckSession(state.session);
+        const success = saveCheckSession(state.session);
+        if (!success) {
+          logger.warn("Session auto-save returned false (possible quota exceeded)");
+           
+          setSaveError("データの保存に失敗しました。ストレージ容量が不足している可能性があります。");
+        } else {
+          // 保存成功時はエラーをクリア
+          if (saveError) {
+             
+            setSaveError(null);
+          }
+        }
       } catch (err) {
         logger.error("Failed to save session auto-sync", err);
+         
+        setSaveError("データの保存中にエラーが発生しました。");
       }
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.session]);
+
+  // #03 複数タブでのセッション競合検知
+  useEffect(() => {
+    const handleStorage = (e) => {
+      // セッションキーの変更、かつ他のタブからの変更を検知
+      if (e.key === "CheckSheet_Session") {
+        logger.warn("Session data modified in another tab");
+        dispatch({ 
+          type: "SET_SYNC_WARNING", 
+          payload: "別のタブでデータが更新されました。最新のデータを表示するにはページを再読み込みしてください。" 
+        });
+      }
+    };
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, []);
 
   const startNewSession = useCallback(({ siteName, inspector, memo }) => {
     const newSession = {
@@ -188,10 +226,17 @@ export function CheckSessionProvider({ children }) {
     [state.session?.answers]
   );
 
+  const clearSaveError = useCallback(() => setSaveError(null), []);
+  const clearSyncWarning = useCallback(() => dispatch({ type: "SET_SYNC_WARNING", payload: null }), []);
+
   const value = {
     session: state.session,
     resumeSession: state.resumeSession,
     isLoaded: state.isLoaded,
+    saveError,
+    syncWarning: state.syncWarning,
+    clearSaveError,
+    clearSyncWarning,
     yesCount,
     noCount,
     startNewSession,

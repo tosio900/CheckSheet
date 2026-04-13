@@ -13,7 +13,8 @@ const PDFTemplate = React.forwardRef(({ session, categorizedAnswers, yesCount, n
   return (
     <div 
       ref={ref} 
-      className="pdf-container" 
+      className="pdf-container"
+      aria-hidden="true"
       style={{ 
         position: "absolute", 
         left: "-9999px", 
@@ -108,4 +109,5 @@ const PDFTemplate = React.forwardRef(({ session, categorizedAnswers, yesCount, n
   );
 });
 
+PDFTemplate.displayName = "PDFTemplate";
 export default PDFTemplate;

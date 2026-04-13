@@ -13,7 +13,7 @@ export default function QuestionCard({
   if (!currentItem) return null;
 
   return (
-    <div className={`${styles["question-card"]} main-question focus-animation`} key={animKey}>
+    <div className={`${styles["question-card"]} focus-animation`} key={animKey}>
       <div className={styles["question-number"]}>
         Q{currentIndex + 1} / {totalItems}
       </div>
@@ -28,7 +28,7 @@ export default function QuestionCard({
 
       {/* 備考（常時表示エリア） */}
       {currentItem.note && (
-        <div className={`${styles["note-card"]} always-open`}>
+        <div className={styles["note-card"]}>
           <div className={styles["note-card-title"]}>
             <Lightbulb size={18} color="#b45309" style={{ marginRight: 4 }} />
             補足と注意

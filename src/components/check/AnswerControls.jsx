@@ -21,8 +21,8 @@ export default function AnswerControls({
       
       <div className={styles["answer-buttons"]}>
         <button
-          className={`${styles["answer-btn"]} ${styles["answer-btn-yes"]} ${isInputIncomplete ? styles["disabled"] : ""}`}
-          onClick={() => !isInputIncomplete && onAnswer("yes")}
+          className={`${styles["answer-btn"]} ${styles["answer-btn-yes"]}`}
+          onClick={() => onAnswer("yes")}
           disabled={isInputIncomplete}
         >
           <CheckCircle size={28} /> はい

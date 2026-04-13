@@ -36,8 +36,8 @@ export default function MatrixView({
                 <tr>
                     {allItems.map((item, i) => {
                     const ans = answerMap.get(item.id);
-                    // 完了項目または現在の位置までアクセス可能
-                    const canAccess = i <= answerMap.size && i < allItems.length;
+                    // 回答済みか、現在位置以前ならアクセス可能
+                    const canAccess = answerMap.has(item.id) || i <= currentIndex;
                     return (
                         <td
                         key={i}

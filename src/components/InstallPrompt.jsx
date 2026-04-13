@@ -8,12 +8,18 @@ import styles from "./InstallPrompt.module.css";
  */
 export default function InstallPrompt() {
   const [showPrompt, setShowPrompt] = useState(() => {
-    // iOSデバイス判定
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    if (typeof window === "undefined" || typeof navigator === "undefined") return false;
+
+    // 最新のiOS/iPadOS判定 (iPadのデスクトップモード含む)
+    const isIOS = 
+      /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+      (navigator.userAgent.includes("Mac") && "ontouchend" in document);
+
     // PWA判定
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-    // Safari判定
-    const isSafari = isIOS && /WebKit/i.test(navigator.userAgent) && !/CriOS/i.test(navigator.userAgent);
+
+    // Safari判定 (Chrome/EdgeなどのサードパーティブラウザはCriOS/EdgiOSなどを含む)
+    const isSafari = isIOS && /WebKit/i.test(navigator.userAgent) && !/CriOS|EdgiOS|OPiOS|FxiOS|Focus/i.test(navigator.userAgent);
     
     // session storage
     if (typeof window !== "undefined") {

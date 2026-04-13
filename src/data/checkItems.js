@@ -240,21 +240,39 @@ export const categories = [
 ];
 
 /**
- * 全チェック項目をフラットな配列として取得する
+ * 全チェック項目をフラットな配列として取得する（モジュールレベルでキャッシュ）
+ * 毎回新規配列を生成せず、初回のみ構築して freeze する
  * @returns {{ id: string, categoryId: string, categoryName: string, question: string, note: string }[]}
  */
+let _allItems = null;
 export function getAllItems() {
-  const items = [];
-  for (const category of categories) {
-    for (const item of category.items) {
-      items.push({
-        ...item,
-        categoryId: category.id,
-        categoryName: category.name,
-      });
+  if (!_allItems) {
+    const items = [];
+    for (const category of categories) {
+      for (const item of category.items) {
+        items.push({
+          ...item,
+          categoryId: category.id,
+          categoryName: category.name,
+        });
+      }
     }
+    _allItems = Object.freeze(items);
   }
-  return items;
+  return _allItems;
+}
+
+/**
+ * 項目ID → allItems配列上のインデックス のマッピングを取得する（キャッシュ済み）
+ * @returns {Map<string, number>}
+ */
+let _itemIndexMap = null;
+export function getItemIndexMap() {
+  if (!_itemIndexMap) {
+    const all = getAllItems();
+    _itemIndexMap = new Map(all.map((item, i) => [item.id, i]));
+  }
+  return _itemIndexMap;
 }
 
 /**

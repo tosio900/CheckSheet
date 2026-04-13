@@ -8,7 +8,7 @@ import styles from "./StartScreen.module.css";
  * 現場名・点検者名・日付を入力する
  */
 export default function StartScreen({ onStart, onBack }) {
-  const profile = loadUserProfile() || {};
+  const [profile] = useState(() => loadUserProfile() || {});
 
   const [siteName, setSiteName] = useState(profile.siteName || "");
   const [inspector, setInspector] = useState(profile.inspector || "");

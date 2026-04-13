@@ -186,6 +186,15 @@
   font-size: var(--font-size-sm);
   color: var(--color-text);
   line-height: 1.5;
+  flex: 1;
+}
+
+.result-item-edit-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2);
 }
 
 /* 結果アクション */
@@ -208,4 +217,21 @@
   font-size: var(--font-size-xs);
   color: var(--color-text-secondary);
   margin-top: var(--space-1);
+}
+
+/* メモ領域 */
+.result-memo-card {
+  background: var(--color-surface);
+  border-radius: var(--radius-xl);
+  padding: var(--space-5);
+  box-shadow: var(--shadow-md);
+  margin-bottom: var(--space-6);
+  animation: fadeInUp 0.4s ease 0.15s both;
+}
+
+.memo-label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-2);
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { getAllItems, TOTAL_ITEMS } from "../data/checkItems";
 import { useCheckSession } from "../hooks/useCheckSession";
 import ProgressHeader from "./check/ProgressHeader";
@@ -24,6 +24,7 @@ export default function ChatCheck({ onComplete, onExit }) {
   const [currentInputs, setCurrentInputs] = useState({});
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [animKey, setAnimKey] = useState(0);
+  const lastAnsweredItemRef = useRef(null);
 
   const currentIndex = session.currentIndex;
   const answers = session.answers;
@@ -32,12 +33,19 @@ export default function ChatCheck({ onComplete, onExit }) {
 
   const currentItem = allItems[currentIndex];
 
-  // currentItem が変わった際に入力値を同期する
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- answerMap を依存に含めると回答のたびにリセットされるため意図的に除外
+  // currentItem または answerMap が変わった際に入力値を同期する
   useEffect(() => {
     if (currentItem) {
+      if (lastAnsweredItemRef.current === currentItem.id) {
+        // 自らの回答アクションによる更新時は入力値リセットやアニメーション再発火を防ぐ
+        lastAnsweredItemRef.current = null;
+        return;
+      }
+      
       const existing = answerMap.get(currentItem.id);
+       
       setCurrentInputs(existing?.inputs || {});
+       
       setAnimKey(prev => prev + 1);
       logger.debug("Current item changed (Reset state)", { 
         index: currentIndex, 
@@ -45,13 +53,15 @@ export default function ChatCheck({ onComplete, onExit }) {
         hasExistingAnswer: !!existing 
       });
     }
-  }, [currentItem?.id]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentItem?.id, answerMap]);
 
   const handleAnswer = (answer) => {
     // 振動フィードバック
     if (navigator.vibrate) {
       navigator.vibrate(30);
     }
+    lastAnsweredItemRef.current = currentItem.id;
     updateAnswer(currentItem, answer, currentInputs);
   };
 

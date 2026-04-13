@@ -45,11 +45,7 @@ export default function ResultScreen({ onRestart, onGoHome, onEdit, onUpdateMemo
     setIsPdfGenerating(true);
     setPdfError(null);
     try {
-      // 日付フォーマット調整
-      const dateStr = session.completedAt ? new Date(session.completedAt).toLocaleDateString("ja-JP").replace(/\//g, "") : "";
-      const exportData = { ...session, date: dateStr };
-      logger.info("PDF export started", { checkId: session.checkId });
-      await generatePDF(pdfRef.current, exportData);
+      await generatePDF(pdfRef.current, session);
       logger.info("PDF export successful");
     } catch (error) {
       logger.error("PDF generation failed", error, { checkId: session.checkId });
@@ -84,8 +80,8 @@ export default function ResultScreen({ onRestart, onGoHome, onEdit, onUpdateMemo
         </div>
       </div>
 
-      <div className="result-memo-card">
-        <div className="memo-label">メモ・特記事項</div>
+      <div className={styles["result-memo-card"]}>
+        <div className={styles["memo-label"]}>メモ・特記事項</div>
         <textarea
           className="form-input"
           value={session.memo || ""}
@@ -111,14 +107,19 @@ export default function ResultScreen({ onRestart, onGoHome, onEdit, onUpdateMemo
           <div key={cat.id} className={styles["result-category"]}>
             <div className={styles["result-category-header"]}>{cat.name}</div>
             <div className={styles["result-category-hint"]}>※項目をタップして修正</div>
-            {cat.answers.map((item) => (
+            {cat.answers.map((item) => {
+              const editIndex = session.answers.findIndex(a => a.itemId === item.id);
+              return (
               <div 
                 key={item.id} 
                 className={styles["result-item"]}
-                onClick={() => onEdit(session.answers.findIndex(a => a.itemId === item.id))}
+                onClick={() => editIndex >= 0 && onEdit(editIndex)}
+                style={editIndex < 0 ? { opacity: 0.6, cursor: "default" } : undefined}
               >
                 <div className={`${styles["result-item-icon"]} ${styles[item.answer] || ""}`}>
-                  {item.answer === "yes" ? <CheckCircle size={18} /> : <XCircle size={18} />}
+                  {item.answer === "yes" ? <CheckCircle size={18} />
+                   : item.answer === "no" ? <XCircle size={18} />
+                   : <span style={{ color: "var(--color-text-muted)", fontSize: "18px", fontWeight: "bold" }}>—</span>}
                 </div>
                 <div className={styles["result-item-text"]}>
                   <div>{item.question}</div>
@@ -128,11 +129,12 @@ export default function ResultScreen({ onRestart, onGoHome, onEdit, onUpdateMemo
                     </div>
                   )}
                 </div>
-                <div className="result-item-edit-icon">
-                   <RotateCcw size={14} style={{ opacity: 0.5 }} />
+                <div className={styles["result-item-edit-icon"]}>
+                   {editIndex >= 0 && <RotateCcw size={14} style={{ opacity: 0.5 }} />}
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         ))}
       </div>

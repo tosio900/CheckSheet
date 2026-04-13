@@ -4,6 +4,7 @@ import StartScreen from "./components/StartScreen";
 import ChatCheck from "./components/ChatCheck";
 import ResultScreen from "./components/ResultScreen";
 import InstallPrompt from "./components/InstallPrompt";
+import Toast from "./components/common/Toast";
 import { useCheckSession } from "./hooks/useCheckSession";
 import { getAllItems } from "./data/checkItems";
 import { SCREENS } from "./constants/screens";
@@ -24,7 +25,11 @@ export default function App() {
     completeSession,
     resetAll,
     refreshResumeSession,
-    goToIndex
+    goToIndex,
+    saveError,
+    syncWarning,
+    clearSaveError,
+    clearSyncWarning,
   } = useCheckSession();
 
   /**
@@ -158,6 +163,12 @@ export default function App() {
           onEdit={handleEditFromResult}
           onUpdateMemo={handleMemoUpdate}
         />
+      )}
+      {saveError && (
+        <Toast message={saveError} type="error" onClose={clearSaveError} />
+      )}
+      {syncWarning && (
+        <Toast message={syncWarning} type="warning" autoClose={false} onClose={clearSyncWarning} />
       )}
     </div>
   );

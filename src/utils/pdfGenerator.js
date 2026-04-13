@@ -1,5 +1,6 @@
 import html2canvas from "html2canvas";
 import { jsPDF } from "jspdf";
+import { sanitizeFileName } from "./sanitize";
 import logger from "./logger";
 
 /**
@@ -50,8 +51,12 @@ export async function generatePDF(element, sessionData) {
       heightLeft -= pageHeight;
     }
 
-    // ファイル名を生成
-    const fileName = `測量前チェック_${sessionData.siteName}_${sessionData.date}.pdf`;
+    // ファイル名を安全に生成（外部から date を渡す必要をなくす）
+    const dateStr = sessionData.completedAt
+      ? new Date(sessionData.completedAt).toLocaleDateString("ja-JP").replace(/\//g, "")
+      : new Date().toLocaleDateString("ja-JP").replace(/\//g, "");
+    const safeSiteName = sanitizeFileName(sessionData.siteName);
+    const fileName = `測量前チェック_${safeSiteName}_${dateStr}.pdf`;
     pdf.save(fileName);
 
     logger.info("PDF生成完了", { fileName });
