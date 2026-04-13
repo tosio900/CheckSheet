@@ -46,7 +46,9 @@ function sessionReducer(state, action) {
       
       const isComplete = sessionLogic.isSessionCompleted(updatedAnswers, TOTAL_ITEMS);
       
-      if (isComplete) {
+      const isInitialCompletion = isComplete && state.session.status !== SESSION_STATUS.COMPLETED;
+
+      if (isInitialCompletion) {
         return {
           ...state,
           session: {
@@ -65,6 +67,7 @@ function sessionReducer(state, action) {
           ...state.session,
           answers: updatedAnswers,
           currentIndex: sessionLogic.calculateNextIndex(state.session.currentIndex, TOTAL_ITEMS),
+          // すでに完了済みの場合はステータスを引き継ぐ
         }
       };
     }

@@ -12,7 +12,7 @@ import styles from "./ChatCheck.module.css";
 /**
  * チェック実行画面（メインチェック画面）
  */
-export default function ChatCheck({ onComplete, onExit }) {
+export default function ChatCheck({ onComplete, onExit, isEditingAfterComplete }) {
   const allItems = getAllItems();
   const { 
     session, 
@@ -36,39 +36,48 @@ export default function ChatCheck({ onComplete, onExit }) {
   // currentItem または answerMap が変わった際に入力値を同期する
   useEffect(() => {
     if (currentItem) {
-      if (lastAnsweredItemRef.current === currentItem.id) {
-        // 自らの回答アクションによる更新時は入力値リセットやアニメーション再発火を防ぐ
-        lastAnsweredItemRef.current = null;
+      const isSameItemAsLastAnswser = lastAnsweredItemRef.current === currentItem.id;
+      
+      if (isSameItemAsLastAnswser) {
+        // 回答直後かつ同じ項目（最後の質問など）に留まっている場合
+        // 初回完了時は onComplete 側でクリアされる
+        // 修正モード時はここでクリアしても良いが、一貫性のためここで一旦残すか、
+        // 修正モード中なら即座にクリアする
+        if (isEditingAfterComplete) {
+          lastAnsweredItemRef.current = null;
+        }
         return;
       }
       
+      // 別の項目に移動した場合はフラグをクリア
+      lastAnsweredItemRef.current = null;
+      
       const existing = answerMap.get(currentItem.id);
-       
       setCurrentInputs(existing?.inputs || {});
-       
       setAnimKey(prev => prev + 1);
-      logger.debug("Current item changed (Reset state)", { 
-        index: currentIndex, 
-        id: currentItem.id, 
-        hasExistingAnswer: !!existing 
-      });
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentItem?.id, answerMap]);
+  }, [currentItem?.id, answerMap, isEditingAfterComplete]);
 
   // #04: 最後の質問または編集中に全回答完了した場合、瞬時に結果画面に遷移する
+  //     ただし、結果画面から編集に戻った場合は、手動ボタンでのみ遷移させる
   useEffect(() => {
-    if (session?.answers?.length >= TOTAL_ITEMS && lastAnsweredItemRef.current) {
-      lastAnsweredItemRef.current = null; // 発火済みフラグをリセット
+    if (session?.answers?.length >= TOTAL_ITEMS && lastAnsweredItemRef.current && !isEditingAfterComplete) {
+      const answeredId = lastAnsweredItemRef.current;
+      lastAnsweredItemRef.current = null; // ここでクリア
+      logger.info("Auto-completing initial session", { lastItem: answeredId });
       onComplete(session);
     }
-  }, [session, onComplete]);
+  }, [session, onComplete, isEditingAfterComplete]);
 
   const handleAnswer = (answer) => {
     // 振動フィードバック
     if (navigator.vibrate) {
       navigator.vibrate(30);
     }
+    
+    // 入力が不完全な場合は進ませない（ガード）
+    if (answer === "yes" && isInputIncomplete) return;
+
     lastAnsweredItemRef.current = currentItem.id;
     updateAnswer(currentItem, answer, currentInputs);
   };
@@ -83,13 +92,10 @@ export default function ChatCheck({ onComplete, onExit }) {
     goToIndex(index);
   };
 
-  // バリデーション計算をメモ化
-  const isInputIncomplete = useMemo(() => {
-    if (!currentItem?.inputs) return false;
-    return currentItem.inputs.some(
-      label => !currentInputs[label] || currentInputs[label].trim() === ""
-    );
-  }, [currentItem, currentInputs]);
+  // バリデーション計算（入力値が未入力の間は「はい」を押せないようにする判定）
+  const isInputIncomplete = currentItem?.inputs 
+    ? currentItem.inputs.some(label => !currentInputs[label] || currentInputs[label].trim() === "")
+    : false;
 
   return (
     <div className={styles["check-screen"]}>

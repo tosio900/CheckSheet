@@ -12,10 +12,15 @@ export async function generatePDF(element, sessionData) {
   try {
     logger.info("PDF生成開始", { siteName: sessionData.siteName });
 
-// ファイル名を安全に生成（外部から date を渡す必要をなくす）
-    const dateStr = sessionData.completedAt
-      ? new Date(sessionData.completedAt).toLocaleDateString("ja-JP").replace(/\//g, "")
-      : new Date().toLocaleDateString("ja-JP").replace(/\//g, "");
+    // ファイル名を安全に生成（実施日時または現在時刻を YYYYMMDD_HHMMSS 形式で）
+    const targetDate = sessionData.completedAt ? new Date(sessionData.completedAt) : new Date();
+    const dateStr = targetDate.getFullYear().toString() +
+      (targetDate.getMonth() + 1).toString().padStart(2, "0") +
+      targetDate.getDate().toString().padStart(2, "0") + "_" +
+      targetDate.getHours().toString().padStart(2, "0") +
+      targetDate.getMinutes().toString().padStart(2, "0") +
+      targetDate.getSeconds().toString().padStart(2, "0");
+
     const safeSiteName = sanitizeFileName(sessionData.siteName);
     const fileName = `測量前チェック_${safeSiteName}_${dateStr}.pdf`;
 

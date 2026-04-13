@@ -18,6 +18,7 @@ import logger from "./utils/logger";
 export default function App() {
   const [screen, setScreen] = useState(SCREENS.HOME);
   const [viewHistorySession, setViewHistorySession] = useState(null);
+  const [isEditingAfterComplete, setIsEditingAfterComplete] = useState(false);
   const { 
     session, 
     resumeSession, 
@@ -41,6 +42,7 @@ export default function App() {
     if (forceNew) {
       resetAll();
     }
+    setIsEditingAfterComplete(false);
     setScreen(SCREENS.START);
     logger.debug("Navigation: home -> start");
   };
@@ -52,6 +54,7 @@ export default function App() {
     if (resumeSession) {
       logger.info("Resuming session", resumeSession.checkId);
       resumeActiveSession();
+      setIsEditingAfterComplete(false);
       setScreen(SCREENS.CHECK);
     }
   };
@@ -61,6 +64,7 @@ export default function App() {
    */
   const handleCheckStart = ({ siteName, inspector, memo }) => {
     startNewSession({ siteName, inspector, memo });
+    setIsEditingAfterComplete(false);
     setScreen(SCREENS.CHECK);
     logger.info("Check started", { siteName, inspector });
     logger.debug("Navigation: start -> check");
@@ -72,6 +76,7 @@ export default function App() {
   const handleComplete = (completedSession) => {
     logger.info("Check completed", completedSession.checkId);
     completeSession(completedSession);
+    setIsEditingAfterComplete(false);
     setScreen(SCREENS.RESULT);
   };
 
@@ -90,6 +95,7 @@ export default function App() {
         logger.warn("Edit target item not found in allItems", { editIndex, targetItemId });
       }
     }
+    setIsEditingAfterComplete(true);
     setScreen(SCREENS.CHECK);
     logger.debug("Returning to check screen for edit", { index: editIndex });
   };
@@ -115,6 +121,7 @@ export default function App() {
    */
   const handleRestart = () => {
     resetAll();
+    setIsEditingAfterComplete(false);
     setScreen(SCREENS.START);
     logger.debug("Restarting check session");
   };
@@ -125,6 +132,7 @@ export default function App() {
   const handleGoHome = () => {
     resetAll();
     setViewHistorySession(null);
+    setIsEditingAfterComplete(false);
     setScreen(SCREENS.HOME);
     logger.debug("Returning to home screen");
   };
@@ -171,6 +179,7 @@ export default function App() {
         <ChatCheck
           onComplete={handleComplete}
           onExit={handleExit}
+          isEditingAfterComplete={isEditingAfterComplete}
         />
       )}
 
