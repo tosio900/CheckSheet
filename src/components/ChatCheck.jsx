@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState } from "react";
 import { getAllItems, TOTAL_ITEMS } from "../data/checkItems";
 import { useCheckSession } from "../hooks/useCheckSession";
 import ProgressHeader from "./check/ProgressHeader";
@@ -25,7 +25,8 @@ export default function ChatCheck({ onComplete, onExit, isEditingAfterComplete }
   const [currentInputs, setCurrentInputs] = useState({});
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [animKey, setAnimKey] = useState(0);
-  const lastAnsweredItemRef = useRef(null);
+  const [lastAnsweredItemId, setLastAnsweredItemId] = useState(null);
+  const [prevItemId, setPrevItemId] = useState(null);
 
   const currentIndex = session.currentIndex;
   const answers = session.answers;
@@ -34,43 +35,28 @@ export default function ChatCheck({ onComplete, onExit, isEditingAfterComplete }
 
   const currentItem = allItems[currentIndex];
 
-  // currentItem または answerMap が変わった際に入力値を同期する
-  useEffect(() => {
-    if (currentItem) {
-      const isSameItemAsLastAnswser = lastAnsweredItemRef.current === currentItem.id;
-      
-      if (isSameItemAsLastAnswser) {
-        // 回答直後かつ同じ項目（最後の質問など）に留まっている場合
-        // 初回完了時は onComplete 側でクリアされる
-        // 修正モード時はここでクリアしても良いが、一貫性のためここで一旦残すか、
-        // 修正モード中なら即座にクリアする
-        if (isEditingAfterComplete) {
-          lastAnsweredItemRef.current = null;
-        }
-        return;
-      }
-      
+  // currentItem が変わった際に入力値を同期する (レンダリング中の状態調整パターン)
+  if (currentItem && currentItem.id !== prevItemId) {
+    const isSameItemAsLastAnswer = lastAnsweredItemId === currentItem.id;
+    
+    if (!isSameItemAsLastAnswer) {
       // 別の項目に移動した場合はフラグをクリア
-      lastAnsweredItemRef.current = null;
+      setLastAnsweredItemId(null);
       
       const existing = answerMap.get(currentItem.id);
       setCurrentInputs(existing?.inputs || {});
       setAnimKey(prev => prev + 1);
+    } else if (isEditingAfterComplete) {
+      // 完了後の編集モードで、回答直後にその項目に留まっている場合は次回移動のために解除
+      setLastAnsweredItemId(null);
     }
-  }, [currentItem?.id, answerMap, isEditingAfterComplete]);
 
-  // #04: 最後の質問または編集中に全回答完了した場合、瞬時に結果画面に遷移する
-  //     ただし、結果画面から編集に戻った場合は、手動ボタンでのみ遷移させる
-  useEffect(() => {
-    if (session?.answers?.length >= TOTAL_ITEMS && lastAnsweredItemRef.current && !isEditingAfterComplete) {
-      const answeredId = lastAnsweredItemRef.current;
-      lastAnsweredItemRef.current = null; // ここでクリア
-      logger.info("Auto-completing initial session", { lastItem: answeredId });
-      onComplete(session);
-    }
-  }, [session, onComplete, isEditingAfterComplete]);
+    setPrevItemId(currentItem.id);
+  }
 
   const handleAnswer = (answer) => {
+    if (!currentItem) return;
+
     // 振動フィードバック
     if (navigator.vibrate) {
       navigator.vibrate(30);
@@ -79,8 +65,17 @@ export default function ChatCheck({ onComplete, onExit, isEditingAfterComplete }
     // 入力が不完全な場合は進ませない（ガード）
     if (answer === "yes" && isInputIncomplete) return;
 
-    lastAnsweredItemRef.current = currentItem.id;
+    setLastAnsweredItemId(currentItem.id);
     updateAnswer(currentItem, answer, currentInputs);
+
+    // 最後の質問への回答かつ初回セッションの場合、自動的に完了させる
+    const isAlreadyAnswered = session.answers.some(a => a.id === currentItem.id);
+    const totalAnsweredCount = session.answers.length + (isAlreadyAnswered ? 0 : 1);
+
+    if (totalAnsweredCount >= TOTAL_ITEMS && !isEditingAfterComplete) {
+      logger.info("Auto-completing session after last answer", { totalAnsweredCount });
+      onComplete(session);
+    }
   };
 
   const handleBack = () => {

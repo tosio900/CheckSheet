@@ -3,7 +3,6 @@ import { categories, TOTAL_ITEMS } from "../data/checkItems";
 import { generatePDF } from "../utils/pdfGenerator";
 import { useCheckSession } from "../hooks/useCheckSession";
 import { getImage } from "../utils/imageDb";
-import { getItemImageIds } from "../domain/sessionLogic";
 import { CheckCircle, XCircle, FileText, RotateCcw, Home, BadgeCheck } from "lucide-react";
 import PDFTemplate from "./check/PDFTemplate";
 import logger from "../utils/logger";
