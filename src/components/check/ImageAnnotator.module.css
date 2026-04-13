@@ -143,3 +143,63 @@
   background: #ef4444;
   border: 2px solid #fff;
 }
+
+/* ============================================
+   小画面（iPhone SE等）向けの最適化
+   ============================================ */
+@media (max-height: 600px) {
+  .annotator-header {
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .annotator-title {
+    font-size: 11px;
+    max-width: 120px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* ツールバーのパディングを極限まで削減 */
+  .annotator-toolbar {
+    padding: var(--space-2) var(--space-2);
+    gap: var(--space-2);
+  }
+
+  /* 
+     小画面ではボタンのテキストを非表示または縮小し、
+     垂直方向のスペースを節約する 
+  */
+  .annotator-btn span,
+  .annotator-tool-btn span {
+    display: none; /* アイコンのみ表示 */
+  }
+
+  .annotator-btn,
+  .annotator-tool-btn {
+    padding: 0;
+    min-width: 40px;
+    min-height: 40px;
+    font-size: 10px;
+  }
+
+  .annotator-tool-btn {
+    flex-direction: column;
+    gap: 2px;
+    padding: 2px 8px;
+  }
+
+  /* アイコンのみになるため、ペンインジケーター等の位置を調整 */
+  .pen-indicator {
+    width: 10px;
+    height: 10px;
+    position: absolute;
+    bottom: 4px;
+    right: 4px;
+  }
+
+  .annotator-tool-btn {
+    position: relative;
+  }
+}
+

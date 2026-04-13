@@ -237,7 +237,6 @@ export default function ImageAttachment({ itemId, imageIds = [] }) {
             ref={fileInputRef}
             type="file"
             accept="image/*"
-            capture="environment"
             className={styles["hidden-file-input"]}
             onChange={handleFileSelect}
           />

@@ -230,7 +230,7 @@ export default function ImageAnnotator({ imageBlob, onSave, onCancel }) {
         >
           <Pen size={18} />
           <div className={styles["pen-indicator"]} />
-          赤ペン
+          <span>赤ペン</span>
         </button>
         <button
           className={styles["annotator-tool-btn"]}
@@ -238,7 +238,7 @@ export default function ImageAnnotator({ imageBlob, onSave, onCancel }) {
           disabled={drawHistory.length <= 1}
         >
           <Undo2 size={18} />
-          元に戻す
+          <span>元に戻す</span>
         </button>
       </div>
     </div>
