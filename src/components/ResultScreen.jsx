@@ -2,6 +2,8 @@ import { useState, useRef, useMemo } from "react";
 import { categories, TOTAL_ITEMS } from "../data/checkItems";
 import { generatePDF } from "../utils/pdfGenerator";
 import { useCheckSession } from "../hooks/useCheckSession";
+import { getImage } from "../utils/imageDb";
+import { getItemImageIds } from "../domain/sessionLogic";
 import { CheckCircle, XCircle, FileText, RotateCcw, Home, BadgeCheck } from "lucide-react";
 import PDFTemplate from "./check/PDFTemplate";
 import logger from "../utils/logger";
@@ -16,6 +18,7 @@ export default function ResultScreen({ sessionOverride, onRestart, onGoHome, onE
   
   const [isPdfGenerating, setIsPdfGenerating] = useState(false);
   const [pdfError, setPdfError] = useState(null);
+  const [imageUrls, setImageUrls] = useState({});
   const pdfRef = useRef(null);
 
   /**
@@ -59,7 +62,7 @@ export default function ResultScreen({ sessionOverride, onRestart, onGoHome, onE
   }, [answerMap]);
 
   /**
-   * PDF出力ハンドラ
+   * PDF出力ハンドラ（画像プリロード付き）
    */
   const handlePdfExport = async () => {
     if (!pdfRef.current || isPdfGenerating) return;
@@ -67,8 +70,36 @@ export default function ResultScreen({ sessionOverride, onRestart, onGoHome, onE
     setIsPdfGenerating(true);
     setPdfError(null);
     try {
+      // 1. 全画像をプリロードしてdataURLに変換
+      const sessionImages = session.images || {};
+      const allImageIds = Object.values(sessionImages).flat();
+      const urls = {};
+
+      for (const imgId of allImageIds) {
+        try {
+          const blob = await getImage(imgId);
+          if (blob) {
+            // BlobをdataURLに変換（html2canvasはObjectURLを正しくレンダリングできないため）
+            const dataUrl = await new Promise((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = () => resolve(reader.result);
+              reader.onerror = reject;
+              reader.readAsDataURL(blob);
+            });
+            urls[imgId] = dataUrl;
+          }
+        } catch (err) {
+          logger.warn("Failed to preload image for PDF", { imgId, err });
+        }
+      }
+
+      // 2. 画像URLをstateに反映し、再レンダリングを待つ
+      setImageUrls(urls);
+
+      // 3. 次のtickでレンダリングされたテンプレートをPDF化
+      await new Promise(resolve => setTimeout(resolve, 100));
       await generatePDF(pdfRef.current, session);
-      logger.info("PDF export successful");
+      logger.info("PDF export successful", { imageCount: allImageIds.length });
     } catch (error) {
       logger.error("PDF generation failed", error, { checkId: session.checkId });
       setPdfError("PDF出力に失敗しました。もう一度お試しください。");
@@ -183,7 +214,8 @@ export default function ResultScreen({ sessionOverride, onRestart, onGoHome, onE
         session={session} 
         categorizedAnswers={categorizedAnswers} 
         yesCount={yesCount} 
-        noCount={noCount} 
+        noCount={noCount}
+        imageUrls={imageUrls}
       />
     </div>
   );

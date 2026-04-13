@@ -6,6 +6,7 @@ import QuestionCard from "./check/QuestionCard";
 import AnswerControls from "./check/AnswerControls";
 import MatrixView from "./check/MatrixView";
 import ConfirmModal from "./common/ConfirmModal";
+import { getItemImageIds } from "../domain/sessionLogic";
 import logger from "../utils/logger";
 import styles from "./ChatCheck.module.css";
 
@@ -97,6 +98,11 @@ export default function ChatCheck({ onComplete, onExit, isEditingAfterComplete }
     ? currentItem.inputs.some(label => !currentInputs[label] || currentInputs[label].trim() === "")
     : false;
 
+  // 現在の項目に紐づく画像IDリスト
+  const currentImageIds = currentItem 
+    ? getItemImageIds(session.images, currentItem.id) 
+    : [];
+
   return (
     <div className={styles["check-screen"]}>
       <ProgressHeader 
@@ -123,6 +129,7 @@ export default function ChatCheck({ onComplete, onExit, isEditingAfterComplete }
                   animKey={animKey}
                   currentInputs={currentInputs}
                   onInputChange={(label, value) => setCurrentInputs(prev => ({ ...prev, [label]: value }))}
+                  imageIds={currentImageIds}
               />
           </div>
 

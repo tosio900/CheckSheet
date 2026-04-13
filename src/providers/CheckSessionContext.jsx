@@ -8,6 +8,7 @@ import {
 import { TOTAL_ITEMS } from "../data/checkItems";
 import { SESSION_STATUS } from "../constants/session";
 import * as sessionLogic from "../domain/sessionLogic";
+import { deleteImage as deleteImageFromDb } from "../utils/imageDb";
 import logger from "../utils/logger";
 
 const CheckSessionContext = createContext(null);
@@ -81,6 +82,30 @@ function sessionReducer(state, action) {
         ...state,
         session: { ...state.session, memo: action.payload }
       };
+    case "ADD_IMAGE": {
+      const { itemId, imageId } = action.payload;
+      const updatedImages = sessionLogic.addImageToSession(
+        state.session.images || {},
+        itemId,
+        imageId
+      );
+      return {
+        ...state,
+        session: { ...state.session, images: updatedImages },
+      };
+    }
+    case "REMOVE_IMAGE": {
+      const { itemId: rmItemId, imageId: rmImageId } = action.payload;
+      const cleanedImages = sessionLogic.removeImageFromSession(
+        state.session.images || {},
+        rmItemId,
+        rmImageId
+      );
+      return {
+        ...state,
+        session: { ...state.session, images: cleanedImages },
+      };
+    }
     case "COMPLETE_SESSION":
       return {
         ...state,
@@ -189,6 +214,7 @@ export function CheckSessionProvider({ children }) {
       status: SESSION_STATUS.IN_PROGRESS,
       currentIndex: 0,
       answers: [],
+      images: {},
     };
     clearCheckSession();
     dispatch({ type: "START_NEW", payload: newSession });
@@ -209,6 +235,16 @@ export function CheckSessionProvider({ children }) {
 
   const updateMemo = useCallback((memo) => {
     dispatch({ type: "UPDATE_MEMO", payload: memo });
+  }, []);
+
+  const addImage = useCallback((itemId, imageId) => {
+    dispatch({ type: "ADD_IMAGE", payload: { itemId, imageId } });
+  }, []);
+
+  const removeImage = useCallback(async (itemId, imageId) => {
+    // IndexedDB から Blob を削除
+    await deleteImageFromDb(imageId);
+    dispatch({ type: "REMOVE_IMAGE", payload: { itemId, imageId } });
   }, []);
 
   const completeSession = useCallback((finalSessionUpdates = {}) => {
@@ -252,6 +288,8 @@ export function CheckSessionProvider({ children }) {
     updateAnswer,
     goToIndex,
     updateMemo,
+    addImage,
+    removeImage,
     completeSession,
     resetAll,
     refreshResumeSession

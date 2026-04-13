@@ -60,3 +60,47 @@ export function calculateSummary(answers) {
     noCount: answers.filter((a) => a.answer === "no").length,
   };
 }
+
+/**
+ * 画像IDをセッションの images マップに追加する
+ * @param {object} images - { [itemId]: [imageId, ...] }
+ * @param {string} itemId - チェック項目ID
+ * @param {string} imageId - 画像ID
+ * @returns {object} 更新された images マップ
+ */
+export function addImageToSession(images, itemId, imageId) {
+  const updated = { ...images };
+  if (!updated[itemId]) {
+    updated[itemId] = [];
+  }
+  updated[itemId] = [...updated[itemId], imageId];
+  return updated;
+}
+
+/**
+ * 画像IDをセッションの images マップから削除する
+ * @param {object} images - { [itemId]: [imageId, ...] }
+ * @param {string} itemId - チェック項目ID
+ * @param {string} imageId - 画像ID
+ * @returns {object} 更新された images マップ
+ */
+export function removeImageFromSession(images, itemId, imageId) {
+  const updated = { ...images };
+  if (updated[itemId]) {
+    updated[itemId] = updated[itemId].filter((id) => id !== imageId);
+    if (updated[itemId].length === 0) {
+      delete updated[itemId];
+    }
+  }
+  return updated;
+}
+
+/**
+ * 特定の項目に紐づく画像IDリストを取得する
+ * @param {object} images - { [itemId]: [imageId, ...] }
+ * @param {string} itemId - チェック項目ID
+ * @returns {string[]} 画像IDリスト
+ */
+export function getItemImageIds(images, itemId) {
+  return (images && images[itemId]) || [];
+}

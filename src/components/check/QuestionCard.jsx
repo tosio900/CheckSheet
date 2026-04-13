@@ -1,5 +1,6 @@
 import { Lightbulb } from "lucide-react";
 import QuestionRenderer from "./QuestionRenderer";
+import ImageAttachment from "./ImageAttachment";
 import styles from "../ChatCheck.module.css";
 
 export default function QuestionCard({ 
@@ -8,7 +9,8 @@ export default function QuestionCard({
   totalItems, 
   animKey, 
   currentInputs, 
-  onInputChange 
+  onInputChange,
+  imageIds
 }) {
   if (!currentItem) return null;
 
@@ -24,6 +26,12 @@ export default function QuestionCard({
         item={currentItem} 
         currentInputs={currentInputs} 
         onInputChange={onInputChange} 
+      />
+
+      {/* 画像添付エリア */}
+      <ImageAttachment 
+        itemId={currentItem.id}
+        imageIds={imageIds}
       />
 
       {/* 備考（常時表示エリア） */}
@@ -46,3 +54,4 @@ export default function QuestionCard({
     </div>
   );
 }
+
