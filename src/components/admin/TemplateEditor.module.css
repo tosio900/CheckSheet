@@ -64,6 +64,19 @@
   padding: var(--space-6);
 }
 
+.empty-editor-message {
+  text-align: center;
+  padding: var(--space-12) var(--space-6);
+  color: var(--color-text-secondary);
+  line-height: 1.8;
+}
+
+.empty-editor-message p:first-child {
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-lg);
+  margin-bottom: var(--space-2);
+}
+
 .category {
   background: white;
   border: 1px solid var(--color-border);

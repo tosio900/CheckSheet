@@ -184,6 +184,12 @@ export default function TemplateEditor({ template, onBack, onSave }) {
       </header>
 
       <div className={styles.content}>
+        {editedTemplate.categories.length === 0 && (
+          <div className={styles["empty-editor-message"]}>
+            <p>カテゴリがありません。</p>
+            <p>下の「カテゴリを追加」ボタンから開始してください。</p>
+          </div>
+        )}
         {editedTemplate.categories.map((cat, catIdx) => (
           <div key={cat.id} className={styles.category}>
             <div className={styles["category-header"]}>

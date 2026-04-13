@@ -31,36 +31,30 @@ export default function TemplateManager({ onBack, onEditTemplate }) {
 
   // 新規テンプレート作成
   const handleCreateNew = async () => {
-    const rawName = window.prompt("チェックリストの名前を入力してください", "新しいチェックリスト");
-    if (rawName === null) return; // キャンセル
-
-    const name = rawName.trim() || "無題のチェックリスト";
+    // 現場ごとに項目が異なるため、空の状態から開始
+    const now = new Date();
+    const dateStr = `${(now.getMonth() + 1).toString().padStart(2, '0')}/${now.getDate().toString().padStart(2, '0')} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+    const name = `新規チェックリスト (${dateStr})`;
 
     const newTemplate = {
       id: "tmpl_" + Date.now(),
       name,
-      categories: [
-        {
-          id: "cat_1",
-          name: "基本項目",
-          items: []
-        }
-      ],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      categories: [], // 完全に空の状態で開始
+      createdAt: now.toISOString(),
+      updatedAt: now.toISOString()
     };
     
     try {
       await saveTemplate(newTemplate);
-      logger.info("Created and saving new template", newTemplate.id);
-      // 即座に編集画面へ遷移させる
+      logger.info("Created new empty template", newTemplate.id);
+      
+      // 作成後、即座に編集画面へ遷移させる
       onEditTemplate(newTemplate);
     } catch (err) {
       logger.error("Failed to create template", err);
       alert("作成に失敗しました");
     }
   };
-
   // エクスポート (JSON)
   const handleExport = (template) => {
     const dataStr = JSON.stringify(template, null, 2);
