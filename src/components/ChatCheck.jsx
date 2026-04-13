@@ -56,6 +56,14 @@ export default function ChatCheck({ onComplete, onExit }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentItem?.id, answerMap]);
 
+  // #04: 最後の質問または編集中に全回答完了した場合、瞬時に結果画面に遷移する
+  useEffect(() => {
+    if (session?.answers?.length >= TOTAL_ITEMS && lastAnsweredItemRef.current) {
+      lastAnsweredItemRef.current = null; // 発火済みフラグをリセット
+      onComplete(session);
+    }
+  }, [session, onComplete]);
+
   const handleAnswer = (answer) => {
     // 振動フィードバック
     if (navigator.vibrate) {
@@ -100,25 +108,27 @@ export default function ChatCheck({ onComplete, onExit }) {
       />
 
       {currentIndex < TOTAL_ITEMS && currentItem ? (
-        <div className={`${styles["check-content"]} ${styles["fixed-layout"]}`}>
-            <QuestionCard 
-                currentItem={currentItem}
-                currentIndex={currentIndex}
-                totalItems={TOTAL_ITEMS}
-                animKey={animKey}
-                currentInputs={currentInputs}
-                onInputChange={(label, value) => setCurrentInputs(prev => ({ ...prev, [label]: value }))}
-            />
+        <>
+          <div className={`${styles["check-content"]} ${styles["fixed-layout"]}`}>
+              <QuestionCard 
+                  currentItem={currentItem}
+                  currentIndex={currentIndex}
+                  totalItems={TOTAL_ITEMS}
+                  animKey={animKey}
+                  currentInputs={currentInputs}
+                  onInputChange={(label, value) => setCurrentInputs(prev => ({ ...prev, [label]: value }))}
+              />
+          </div>
 
-            <AnswerControls 
-                currentIndex={currentIndex}
-                isInputIncomplete={isInputIncomplete}
-                onAnswer={handleAnswer}
-                onBack={handleBack}
-                onComplete={() => onComplete(session)}
-                showCompleteBtn={answers.length === TOTAL_ITEMS}
-            />
-        </div>
+          <AnswerControls 
+              currentIndex={currentIndex}
+              isInputIncomplete={isInputIncomplete}
+              onAnswer={handleAnswer}
+              onBack={handleBack}
+              onComplete={() => onComplete(session)}
+              showCompleteBtn={answers.length === TOTAL_ITEMS}
+          />
+        </>
       ) : null}
 
       {/* 中断確認ダイアログ */}

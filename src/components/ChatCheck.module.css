@@ -111,8 +111,8 @@
   flex-direction: column;
   justify-content: flex-start;
   /* 上部に固定 */
-  padding: var(--space-4) var(--space-4) 0 var(--space-4);
-  /* 下から余白を削る */
+  padding: var(--space-4);
+  /* 独立した回答エリアへの余白確保 */
   overflow-y: auto;
   /* 万が一画面が小さい場合のみスクロール */
 }

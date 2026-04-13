@@ -12,54 +12,53 @@ export async function generatePDF(element, sessionData) {
   try {
     logger.info("PDF生成開始", { siteName: sessionData.siteName });
 
-    // html2canvasでHTML要素をキャンバスに描画
-    const canvas = await html2canvas(element, {
-      scale: 2, // 高解像度
-      useCORS: true,
-      logging: false,
-      backgroundColor: "#ffffff",
-      // 要素のサイズを正確に取得
-      width: element.offsetWidth,
-      height: element.offsetHeight,
-      windowWidth: element.offsetWidth,
-      windowHeight: element.offsetHeight,
-    });
-
-    logger.debug("キャンバス生成完了", { width: canvas.width, height: canvas.height });
-
-    // A4サイズのPDFを作成 (210mm x 297mm)
-    const pdf = new jsPDF("p", "mm", "a4");
-    const imgWidth = 210;
-    const pageHeight = 297;
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
-    const imgData = canvas.toDataURL("image/jpeg", 0.95);
-
-    let heightLeft = imgHeight;
-    let position = 0;
-
-    // 1ページ目
-    pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
-    heightLeft -= pageHeight;
-
-    // 複数ページ対応
-    while (heightLeft > 0) {
-      position = heightLeft - imgHeight;
-      // 改ページ時に少し重なりを持たせて情報の欠落を防ぐなどの調整も可能だが、
-      // 基本は position をずらして addPage
-      pdf.addPage();
-      pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
-    }
-
-    // ファイル名を安全に生成（外部から date を渡す必要をなくす）
+// ファイル名を安全に生成（外部から date を渡す必要をなくす）
     const dateStr = sessionData.completedAt
       ? new Date(sessionData.completedAt).toLocaleDateString("ja-JP").replace(/\//g, "")
       : new Date().toLocaleDateString("ja-JP").replace(/\//g, "");
     const safeSiteName = sanitizeFileName(sessionData.siteName);
     const fileName = `測量前チェック_${safeSiteName}_${dateStr}.pdf`;
+
+    // A4サイズのPDFを作成 (210mm x 297mm)
+    const pdf = new jsPDF("p", "mm", "a4");
+    const imgWidth = 210;
+    
+    // .pdf-page クラスを持つすべての子要素を取得
+    const pages = element.querySelectorAll('.pdf-page');
+    
+    if (pages.length === 0) {
+      throw new Error("No PDF pages found to render.");
+    }
+
+    for (let i = 0; i < pages.length; i++) {
+      const pageEl = pages[i];
+      
+      // html2canvasでページごとにキャンバスに描画
+      const canvas = await html2canvas(pageEl, {
+        scale: 2, // 高解像度
+        useCORS: true,
+        logging: false,
+        backgroundColor: "#ffffff",
+        width: pageEl.offsetWidth,
+        height: pageEl.offsetHeight,
+        windowWidth: pageEl.offsetWidth,
+        windowHeight: pageEl.offsetHeight,
+      });
+      
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      const imgData = canvas.toDataURL("image/jpeg", 0.95);
+      
+      if (i > 0) {
+        pdf.addPage();
+      }
+      
+      // (0, 0) から A4サイズ幅に合わせて描画
+      pdf.addImage(imgData, "JPEG", 0, 0, imgWidth, imgHeight);
+    }
+
     pdf.save(fileName);
 
-    logger.info("PDF生成完了", { fileName });
+    logger.info("PDF生成完了", { fileName, pages: pages.length });
     return true;
   } catch (error) {
     logger.error("PDF生成失敗", error);

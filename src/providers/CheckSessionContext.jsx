@@ -144,6 +144,11 @@ export function CheckSessionProvider({ children }) {
              
             setSaveError(null);
           }
+          
+          // 履歴保存 (COMPLETED の場合のみ)
+          if (state.session.status === SESSION_STATUS.COMPLETED) {
+            import("../utils/storage").then(m => m.saveSessionToHistory(state.session));
+          }
         }
       } catch (err) {
         logger.error("Failed to save session auto-sync", err);

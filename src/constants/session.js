@@ -10,4 +10,5 @@ export const SESSION_STATUS = {
 export const STORAGE_KEYS = {
   SESSION: "survey_check_session",
   USER_PROFILE: "survey_user_profile",
+  HISTORY: "survey_check_history",
 };

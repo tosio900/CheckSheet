@@ -3,6 +3,7 @@ import HomeScreen from "./components/HomeScreen";
 import StartScreen from "./components/StartScreen";
 import ChatCheck from "./components/ChatCheck";
 import ResultScreen from "./components/ResultScreen";
+import HistoryScreen from "./components/HistoryScreen";
 import InstallPrompt from "./components/InstallPrompt";
 import Toast from "./components/common/Toast";
 import { useCheckSession } from "./hooks/useCheckSession";
@@ -16,6 +17,7 @@ import logger from "./utils/logger";
  */
 export default function App() {
   const [screen, setScreen] = useState(SCREENS.HOME);
+  const [viewHistorySession, setViewHistorySession] = useState(null);
   const { 
     session, 
     resumeSession, 
@@ -78,7 +80,6 @@ export default function App() {
    */
   const handleEditFromResult = (editIndex) => {
     // editIndex は session.answers 配列内のインデックス
-    // goToIndex が期待するのは allItems 配列上の通し番号なので変換が必要
     if (editIndex >= 0 && session?.answers?.[editIndex]) {
       const allItems = getAllItems();
       const targetItemId = session.answers[editIndex].itemId;
@@ -123,8 +124,24 @@ export default function App() {
    */
   const handleGoHome = () => {
     resetAll();
+    setViewHistorySession(null);
     setScreen(SCREENS.HOME);
     logger.debug("Returning to home screen");
+  };
+
+  /**
+   * 履歴一覧を開く
+   */
+  const handleOpenHistory = () => {
+    setScreen(SCREENS.HISTORY);
+  };
+
+  /**
+   * 特定の履歴詳細を閲覧する
+   */
+  const handleViewHistoryDetail = (historyData) => {
+    setViewHistorySession(historyData);
+    setScreen(SCREENS.RESULT);
   };
 
   return (
@@ -136,6 +153,7 @@ export default function App() {
           onStartNew={handleStartNew}
           onResume={handleResume}
           resumeSession={resumeSession}
+          onOpenHistory={handleOpenHistory}
         />
       )}
 
@@ -156,14 +174,27 @@ export default function App() {
         />
       )}
 
-      {screen === SCREENS.RESULT && session && (
-        <ResultScreen
-          onRestart={handleRestart}
-          onGoHome={handleGoHome}
-          onEdit={handleEditFromResult}
-          onUpdateMemo={handleMemoUpdate}
+      {screen === SCREENS.HISTORY && (
+        <HistoryScreen
+          onBack={() => setScreen(SCREENS.HOME)}
+          onViewHistory={handleViewHistoryDetail}
         />
       )}
+
+      {screen === SCREENS.RESULT && (session || viewHistorySession) && (
+        <ResultScreen
+          sessionOverride={viewHistorySession}
+          isReadOnly={!!viewHistorySession}
+          onRestart={handleRestart}
+          onGoHome={viewHistorySession ? () => {
+            setViewHistorySession(null);
+            setScreen(SCREENS.HISTORY);
+          } : handleGoHome}
+          onEdit={viewHistorySession ? undefined : handleEditFromResult}
+          onUpdateMemo={viewHistorySession ? undefined : handleMemoUpdate}
+        />
+      )}
+
       {saveError && (
         <Toast message={saveError} type="error" onClose={clearSaveError} />
       )}

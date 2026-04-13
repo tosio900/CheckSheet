@@ -10,11 +10,33 @@ import styles from "./ResultScreen.module.css";
 /**
  * 結果確認画面コンポーネント
  */
-export default function ResultScreen({ onRestart, onGoHome, onEdit, onUpdateMemo }) {
-  const { session, yesCount, noCount, answerMap } = useCheckSession();
+export default function ResultScreen({ sessionOverride, onRestart, onGoHome, onEdit, onUpdateMemo, isReadOnly }) {
+  const contextSession = useCheckSession();
+  const session = sessionOverride || contextSession.session;
+  
   const [isPdfGenerating, setIsPdfGenerating] = useState(false);
   const [pdfError, setPdfError] = useState(null);
   const pdfRef = useRef(null);
+
+  /**
+   * 計算用状態（Override時は再計算する）
+   */
+  const answerMap = useMemo(() => {
+    if (sessionOverride) {
+      return new Map(session.answers.map(a => [a.itemId, a]));
+    }
+    return contextSession.answerMap;
+  }, [sessionOverride, session.answers, contextSession.answerMap]);
+
+  const yesCount = useMemo(() => {
+    if (sessionOverride) return session.answers.filter(a => a.answer === "yes").length;
+    return contextSession.yesCount;
+  }, [sessionOverride, session.answers, contextSession.yesCount]);
+
+  const noCount = useMemo(() => {
+    if (sessionOverride) return session.answers.filter(a => a.answer === "no").length;
+    return contextSession.noCount;
+  }, [sessionOverride, session.answers, contextSession.noCount]);
 
   /**
    * カテゴリ別に回答をグループ化
@@ -59,7 +81,7 @@ export default function ResultScreen({ onRestart, onGoHome, onEdit, onUpdateMemo
     <div className={styles["result-screen"]}>
       <div className={styles["result-header"]}>
         <div className={styles["result-icon"]}><BadgeCheck size={64} color="var(--color-primary)" /></div>
-        <h1>チェック完了！</h1>
+        <h1>{isReadOnly ? "過去のチェック記録" : "チェック完了！"}</h1>
         <p>{TOTAL_ITEMS}項目すべてのチェックが完了しました</p>
       </div>
 
@@ -85,9 +107,10 @@ export default function ResultScreen({ onRestart, onGoHome, onEdit, onUpdateMemo
         <textarea
           className="form-input"
           value={session.memo || ""}
-          onChange={(e) => onUpdateMemo(e.target.value)}
-          placeholder="ここから追記・修正できます"
+          onChange={(e) => !isReadOnly && onUpdateMemo(e.target.value)}
+          placeholder={isReadOnly ? "メモはありません" : "ここから追記・修正できます"}
           rows={3}
+          disabled={isReadOnly}
         />
       </div>
 
@@ -106,15 +129,15 @@ export default function ResultScreen({ onRestart, onGoHome, onEdit, onUpdateMemo
         {categorizedAnswers.map((cat) => (
           <div key={cat.id} className={styles["result-category"]}>
             <div className={styles["result-category-header"]}>{cat.name}</div>
-            <div className={styles["result-category-hint"]}>※項目をタップして修正</div>
+            {!isReadOnly && <div className={styles["result-category-hint"]}>※項目をタップして修正</div>}
             {cat.answers.map((item) => {
               const editIndex = session.answers.findIndex(a => a.itemId === item.id);
               return (
               <div 
                 key={item.id} 
                 className={styles["result-item"]}
-                onClick={() => editIndex >= 0 && onEdit(editIndex)}
-                style={editIndex < 0 ? { opacity: 0.6, cursor: "default" } : undefined}
+                onClick={() => !isReadOnly && editIndex >= 0 && onEdit(editIndex)}
+                style={isReadOnly || editIndex < 0 ? { cursor: "default" } : undefined}
               >
                 <div className={`${styles["result-item-icon"]} ${styles[item.answer] || ""}`}>
                   {item.answer === "yes" ? <CheckCircle size={18} />
@@ -129,9 +152,11 @@ export default function ResultScreen({ onRestart, onGoHome, onEdit, onUpdateMemo
                     </div>
                   )}
                 </div>
-                <div className={styles["result-item-edit-icon"]}>
-                   {editIndex >= 0 && <RotateCcw size={14} style={{ opacity: 0.5 }} />}
-                </div>
+                {!isReadOnly && (
+                  <div className={styles["result-item-edit-icon"]}>
+                     {editIndex >= 0 && <RotateCcw size={14} style={{ opacity: 0.5 }} />}
+                  </div>
+                )}
               </div>
               );
             })}
@@ -148,8 +173,8 @@ export default function ResultScreen({ onRestart, onGoHome, onEdit, onUpdateMemo
             {pdfError}
           </div>
         )}
-        <button className="btn btn-secondary btn-block" onClick={onRestart}><RotateCcw size={18} /> もう一度チェック</button>
-        <button className="btn btn-ghost btn-block" onClick={onGoHome}><Home size={18} /> ホームに戻る</button>
+        {!isReadOnly && <button className="btn btn-secondary btn-block" onClick={onRestart}><RotateCcw size={18} /> もう一度チェック</button>}
+        <button className="btn btn-ghost btn-block" onClick={onGoHome}><Home size={18} /> {isReadOnly ? "履歴一覧に戻る" : "ホームに戻る"}</button>
       </div>
 
       {/* PDF用の隠しテンプレート */}

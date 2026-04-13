@@ -94,3 +94,41 @@ export function loadUserProfile() {
     return null;
   }
 }
+
+/**
+ * 完了したセッションを履歴に追加（最大50件）
+ * @param {object} sessionData
+ */
+export function saveSessionToHistory(sessionData) {
+  try {
+    const history = loadHistory();
+    const existingIndex = history.findIndex(h => h.checkId === sessionData.checkId);
+    if (existingIndex >= 0) {
+      history[existingIndex] = sessionData; // 更新
+    } else {
+      history.unshift(sessionData); // 先頭に追加
+    }
+    if (history.length > 50) {
+      history.length = 50;
+    }
+    localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(history));
+    logger.debug("Session saved to history", sessionData.checkId);
+  } catch (error) {
+    logger.error("Failed to save session to history", error);
+  }
+}
+
+/**
+ * 履歴一覧を読み込み
+ * @returns {Array<object>}
+ */
+export function loadHistory() {
+  try {
+    const json = localStorage.getItem(STORAGE_KEYS.HISTORY);
+    if (!json) return [];
+    return JSON.parse(json);
+  } catch (error) {
+    logger.error("Failed to load history", error);
+    return [];
+  }
+}

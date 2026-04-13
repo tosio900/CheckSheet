@@ -7,4 +7,5 @@ export const SCREENS = Object.freeze({
   START: "start",
   CHECK: "check",
   RESULT: "result",
+  HISTORY: "history",
 });

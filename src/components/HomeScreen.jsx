@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ClipboardList, AlertTriangle, PenTool } from "lucide-react";
+import { ClipboardList, AlertTriangle, PenTool, History } from "lucide-react";
 import { TOTAL_ITEMS } from "../data/checkItems";
 import ConfirmModal from "./common/ConfirmModal";
 import styles from "./HomeScreen.module.css";
@@ -8,8 +8,9 @@ import styles from "./HomeScreen.module.css";
  * ホーム画面コンポーネント
  * - 新規チェック開始
  * - 中断中セッションの再開/破棄
+ * - 過去履歴の閲覧
  */
-export default function HomeScreen({ onStartNew, onResume, resumeSession }) {
+export default function HomeScreen({ onStartNew, onResume, resumeSession, onOpenHistory }) {
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
 
   return (
@@ -42,7 +43,6 @@ export default function HomeScreen({ onStartNew, onResume, resumeSession }) {
             </p>
             <div className={styles["home-resume-actions"]}>
               <button
-                // グローバルなボタンスタイルはそのまま
                 className="btn btn-warning btn-sm"
                 onClick={onResume}
                 id="btn-resume"
@@ -63,10 +63,19 @@ export default function HomeScreen({ onStartNew, onResume, resumeSession }) {
         {/* 新規チェック開始ボタン */}
         <button
           className="btn btn-primary btn-lg btn-block"
-          onClick={onStartNew}
+          onClick={() => onStartNew(false)}
           id="btn-start-new"
         >
           <PenTool size={20} /> 新規チェック開始
+        </button>
+        
+        {/* 過去履歴を閲覧ボタン */}
+        <button
+          className="btn btn-secondary btn-lg btn-block"
+          style={{ marginTop: "12px", background: "#f1f5f9", color: "#334155", border: "1px solid #cbd5e1" }}
+          onClick={onOpenHistory}
+        >
+          <History size={20} /> 過去の履歴を見る
         </button>
       </div>
 
