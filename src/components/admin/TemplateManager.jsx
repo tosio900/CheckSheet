@@ -32,15 +32,17 @@ export default function TemplateManager({ onBack, onEditTemplate }) {
   // 新規テンプレート作成
   const handleCreateNew = async () => {
     const rawName = window.prompt("チェックリストの名前を入力してください", "新しいチェックリスト");
-    if (!rawName) return;
+    if (rawName === null) return; // キャンセル
+
+    const name = rawName.trim() || "無題のチェックリスト";
 
     const newTemplate = {
       id: "tmpl_" + Date.now(),
-      name: rawName,
+      name,
       categories: [
         {
           id: "cat_1",
-          name: "新規カテゴリ",
+          name: "基本項目",
           items: []
         }
       ],
@@ -50,8 +52,11 @@ export default function TemplateManager({ onBack, onEditTemplate }) {
     
     try {
       await saveTemplate(newTemplate);
-      logger.info("Created new template", newTemplate.id);
-    } catch {
+      logger.info("Created and saving new template", newTemplate.id);
+      // 即座に編集画面へ遷移させる
+      onEditTemplate(newTemplate);
+    } catch (err) {
+      logger.error("Failed to create template", err);
       alert("作成に失敗しました");
     }
   };

@@ -45,6 +45,10 @@ function sessionReducer(state, action) {
       const newAnswer = sessionLogic.createAnswerObject(item, answer, inputs);
       const updatedAnswers = sessionLogic.updateAnswersList(state.session.answers, newAnswer);
       
+      // 回答が確定した項目のドラフトを削除
+      const updatedDrafts = { ...(state.session.draftInputs || {}) };
+      delete updatedDrafts[item.id];
+
       const isComplete = sessionLogic.isSessionCompleted(updatedAnswers, totalItems);
       const isInitialCompletion = isComplete && state.session.status !== SESSION_STATUS.COMPLETED;
 
@@ -54,6 +58,7 @@ function sessionReducer(state, action) {
           session: {
             ...state.session,
             answers: updatedAnswers,
+            draftInputs: updatedDrafts,
             currentIndex: totalItems - 1,
             status: SESSION_STATUS.COMPLETED,
             completedAt: new Date().toISOString(),
@@ -66,7 +71,21 @@ function sessionReducer(state, action) {
         session: {
           ...state.session,
           answers: updatedAnswers,
+          draftInputs: updatedDrafts,
           currentIndex: sessionLogic.calculateNextIndex(state.session.currentIndex, totalItems),
+        }
+      };
+    }
+    case "UPDATE_DRAFT": {
+      const { itemId, inputs } = action.payload;
+      return {
+        ...state,
+        session: {
+          ...state.session,
+          draftInputs: {
+            ...(state.session.draftInputs || {}),
+            [itemId]: inputs
+          }
         }
       };
     }
@@ -190,6 +209,7 @@ export function CheckSessionProvider({ children }) {
       status: SESSION_STATUS.IN_PROGRESS,
       currentIndex: 0,
       answers: [],
+      draftInputs: {},
       images: {},
       gps: null,
     };
@@ -224,6 +244,10 @@ export function CheckSessionProvider({ children }) {
   const removeImage = useCallback(async (itemId, imageId) => {
     await deleteImageFromDb(imageId);
     dispatch({ type: "REMOVE_IMAGE", payload: { itemId, imageId } });
+  }, []);
+
+  const updateDraft = useCallback((itemId, inputs) => {
+    dispatch({ type: "UPDATE_DRAFT", payload: { itemId, inputs } });
   }, []);
 
   const completeSession = useCallback((finalSessionUpdates = {}) => {
@@ -271,6 +295,7 @@ export function CheckSessionProvider({ children }) {
     addImage,
     removeImage,
     completeSession,
+    updateDraft,
     resetAll,
     refreshResumeSession
   };

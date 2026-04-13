@@ -80,7 +80,7 @@
   --transition-slow: 400ms ease;
 
   /* レイアウト */
-  --max-width: 480px;
+  --max-width: 600px;
   --header-height: 56px;
 }
 
@@ -705,10 +705,6 @@ body {
    レスポンシブ対応
    ============================================ */
 @media (min-width: 768px) {
-  .app {
-    max-width: 520px;
-  }
-
   .question-text {
     font-size: var(--font-size-xl);
   }
@@ -720,10 +716,6 @@ body {
 }
 
 @media (min-width: 1024px) {
-  .app {
-    max-width: 560px;
-  }
-
   .home-logo {
     width: 120px;
     height: 120px;

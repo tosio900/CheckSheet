@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useCheckSession } from "../hooks/useCheckSession";
 import { useTemplates } from "../providers/TemplateContext";
 import ProgressHeader from "./check/ProgressHeader";
@@ -21,6 +21,7 @@ export default function ChatCheck({ onComplete, onExit, isEditingAfterComplete }
   const { 
     session, 
     updateAnswer, 
+    updateDraft,
     goToIndex,
     answerMap
   } = useCheckSession();
@@ -47,7 +48,9 @@ export default function ChatCheck({ onComplete, onExit, isEditingAfterComplete }
       setLastAnsweredItemId(null);
       
       const existing = answerMap.get(currentItem.id);
-      setCurrentInputs(existing?.inputs || {});
+      const draft = session.draftInputs?.[currentItem.id];
+      // ドラフトがあればそれを優先、なければ回答済み項目から復元
+      setCurrentInputs(draft || existing?.inputs || {});
       setAnimKey(prev => prev + 1);
     } else if (isEditingAfterComplete) {
       // 完了後の編集モードで、回答直後にその項目に留まっている場合は次回移動のために解除
@@ -56,6 +59,18 @@ export default function ChatCheck({ onComplete, onExit, isEditingAfterComplete }
 
     setPrevItemId(currentItem.id);
   }
+
+  // 入力値の変更を監視し、デバウンスしてドラフト保存
+  useEffect(() => {
+    if (!currentItem) return;
+
+    // 変更がない場合はスキップ（初期化時のループ防止）
+    const timer = setTimeout(() => {
+      updateDraft(currentItem.id, currentInputs);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [currentInputs, currentItem?.id, updateDraft]);
 
   const handleAnswer = (answer) => {
     if (!currentItem) return;

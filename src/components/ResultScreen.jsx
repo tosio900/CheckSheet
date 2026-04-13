@@ -29,6 +29,7 @@ export default function ResultScreen({ sessionOverride, onRestart, onGoHome, onE
   const [isPdfGenerating, setIsPdfGenerating] = useState(false);
   const [pdfError, setPdfError] = useState(null);
   const [imageUrls, setImageUrls] = useState({});
+  const [filter, setFilter] = useState("all"); // 'all' | 'yes' | 'no'
   const pdfRef = useRef(null);
 
   // 使用されたテンプレートを特定し、項目情報を解析
@@ -85,6 +86,20 @@ export default function ResultScreen({ sessionOverride, onRestart, onGoHome, onE
       };
     });
   }, [displayTemplate, answerMap]);
+
+  /**
+   * フィルター適用後の回答リスト
+   */
+  const filteredCategorizedAnswers = useMemo(() => {
+    if (filter === "all") return categorizedAnswers;
+    
+    return categorizedAnswers
+      .map(cat => ({
+        ...cat,
+        answers: cat.answers.filter(a => a.answer === filter)
+      }))
+      .filter(cat => cat.answers.length > 0);
+  }, [categorizedAnswers, filter]);
 
   /**
    * PDF出力ハンドラ（画像プリロード付き）
@@ -190,21 +205,42 @@ export default function ResultScreen({ sessionOverride, onRestart, onGoHome, onE
       </div>
 
       <div className={styles["result-summary"]}>
-        <div className={`${styles["summary-card"]} ${styles.yes}`}>
+        <div 
+          className={`${styles["summary-card"]} ${styles.yes} ${filter === 'yes' ? styles.active : ''}`}
+          onClick={() => setFilter(filter === 'yes' ? 'all' : 'yes')}
+          role="button"
+          aria-pressed={filter === 'yes'}
+        >
           <div className={styles["summary-count"]}>{yesCount}</div>
           <div className={styles["summary-label"]}>はい</div>
         </div>
-        <div className={`${styles["summary-card"]} ${styles.no}`}>
+        <div 
+          className={`${styles["summary-card"]} ${styles.no} ${filter === 'no' ? styles.active : ''}`}
+          onClick={() => setFilter(filter === 'no' ? 'all' : 'no')}
+          role="button"
+          aria-pressed={filter === 'no'}
+        >
           <div className={styles["summary-count"]}>{noCount}</div>
           <div className={styles["summary-label"]}>いいえ</div>
         </div>
       </div>
 
+      <div className={styles["result-list-header"]}>
+        <span className={styles["list-title"]}>
+          {filter === 'all' ? 'すべての回答' : filter === 'yes' ? '「はい」の回答' : '「いいえ」の回答'}
+        </span>
+        {filter !== 'all' && (
+          <button className={styles["filter-reset"]} onClick={() => setFilter('all')}>
+            すべて表示
+          </button>
+        )}
+      </div>
+
       <div className={styles["result-list"]}>
-        {categorizedAnswers.map((cat) => (
+        {filteredCategorizedAnswers.length > 0 ? filteredCategorizedAnswers.map((cat) => (
           <div key={cat.id} className={styles["result-category"]}>
             <div className={styles["result-category-header"]}>{cat.name}</div>
-            {!isReadOnly && <div className={styles["result-category-hint"]}>※項目をタップして修正</div>}
+            {!isReadOnly && filter === 'all' && <div className={styles["result-category-hint"]}>※項目をタップして修正</div>}
             {cat.answers.map((item) => {
               const editIndex = session.answers.findIndex(a => a.itemId === item.id);
               return (
@@ -236,7 +272,11 @@ export default function ResultScreen({ sessionOverride, onRestart, onGoHome, onE
               );
             })}
           </div>
-        ))}
+        )) : (
+          <div className={styles["result-empty"]}>
+            該当する項目はありません
+          </div>
+        )}
       </div>
 
       <div className={styles["result-actions"]}>
