@@ -59,6 +59,31 @@ export async function generatePDF(element, sessionData) {
       
       // (0, 0) から A4サイズ幅に合わせて描画
       pdf.addImage(imgData, "JPEG", 0, 0, imgWidth, imgHeight);
+
+      // 画像化により失われたリンク情報（href）を、手動で座標計算してPDFに追加
+      const pageRect = pageEl.getBoundingClientRect();
+      const linkElements = pageEl.querySelectorAll('.pdf-link-target');
+      
+      // ピクセルからPDFの単位 (mm, A4幅=210) への変換係数
+      const pixelToMm = imgWidth / pageEl.offsetWidth; 
+
+      linkElements.forEach(linkEl => {
+        const linkRect = linkEl.getBoundingClientRect();
+        // ページ要素を基準にした相対座標
+        const relX = linkRect.left - pageRect.left;
+        const relY = linkRect.top - pageRect.top;
+        
+        const pdfX = relX * pixelToMm;
+        const pdfY = relY * pixelToMm;
+        const pdfW = linkRect.width * pixelToMm;
+        const pdfH = linkRect.height * pixelToMm;
+        
+        const url = linkEl.getAttribute('data-url');
+        if (url) {
+          // pdf.link (x, y, w, h, options)
+          pdf.link(pdfX, pdfY, pdfW, pdfH, { url });
+        }
+      });
     }
 
     pdf.save(fileName);

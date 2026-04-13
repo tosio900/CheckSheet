@@ -64,7 +64,9 @@ const PDFTemplate = React.forwardRef(({ session, categorizedAnswers, yesCount, n
                     href={`https://www.google.com/maps/search/?api=1&query=${session.gps.lat},${session.gps.lng}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    style={{ color: "#2563eb", textDecoration: "underline" }}
+                    className="pdf-link-target"
+                    data-url={`https://www.google.com/maps/search/?api=1&query=${session.gps.lat},${session.gps.lng}`}
+                    style={{ color: "#2563eb", textDecoration: "underline", display: "inline-block" }}
                   >
                     北緯: {session.gps.lat.toFixed(6)} / 東経: {session.gps.lng.toFixed(6)}
                   </a>

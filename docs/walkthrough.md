@@ -13,12 +13,14 @@
 
 ## 2. GPS位置情報の地図連携
 
-- **`ResultScreen.jsx`** および **`PDFTemplate.jsx`**:
+- **`ResultScreen.jsx`**:
   表示される「北緯/東経」のテキストに、Google Maps への検索URLを用いたリンクタグ `<a>` を追加しました。
-  ```html
-  <a href={`https://www.google.com/maps/search/?api=1&query=${lat},${lng}`}>
-  ```
-  この形式のURLは、iOS環境やAndroid環境において、それぞれのOSに応じた地図アプリ（Google Mapsアプリなど）を自動的に起動させるため、現場作業中の操作性を飛躍的に高めます。
+
+- **`PDFTemplate.jsx`** および **`pdfGenerator.js`**:
+  `html2canvas` による画像化プロセスではリンク属性が失われるため、HTMLのリンク要素に `pdf-link-target` クラスと `data-url` 属性を付与しました。
+  PDF生成時（`pdfGenerator.js`）に、これらの要素のブラウザ上の座標・サイズ（`getBoundingClientRect()`）を取得し、ピクセルからPDF単位（ミリメートル）へ変換。画像を出力した直後に `jsPDF.link()` メソッドを使用して透明なクリッカブルエリアを手動でオーバーレイ生成することで、複雑なCSSデザインとリンク機能の両立を実現しました。
+
+  この形式のURL（`https://www.google.com/maps/search/?api=1&query=${lat},${lng}`）は、iOS/Androidにおいて、それぞれのOSに応じた地図アプリ（Google Mapsなど）を自動的に起動させます。
 
 ---
 
