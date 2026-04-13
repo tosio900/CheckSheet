@@ -5,7 +5,7 @@ import {
   clearCheckSession,
   generateCheckId,
 } from "../utils/storage";
-import { TOTAL_ITEMS } from "../data/checkItems";
+import { useTemplates } from "./TemplateContext";
 import { SESSION_STATUS } from "../constants/session";
 import * as sessionLogic from "../domain/sessionLogic";
 import { deleteImage as deleteImageFromDb } from "../utils/imageDb";
@@ -17,8 +17,8 @@ const initialState = {
   session: null,
   resumeSession: null,
   isLoaded: false,
-  saveError: null, // LocalStorage保存失敗時のエラーメッセージ
-  syncWarning: null, // 他タブでのデータ更新警告
+  saveError: null,
+  syncWarning: null,
 };
 
 function sessionReducer(state, action) {
@@ -41,12 +41,11 @@ function sessionReducer(state, action) {
         session: state.resumeSession,
       };
     case "ANSWER_QUESTION": {
-      const { item, answer, inputs } = action.payload;
+      const { item, answer, inputs, totalItems } = action.payload;
       const newAnswer = sessionLogic.createAnswerObject(item, answer, inputs);
       const updatedAnswers = sessionLogic.updateAnswersList(state.session.answers, newAnswer);
       
-      const isComplete = sessionLogic.isSessionCompleted(updatedAnswers, TOTAL_ITEMS);
-      
+      const isComplete = sessionLogic.isSessionCompleted(updatedAnswers, totalItems);
       const isInitialCompletion = isComplete && state.session.status !== SESSION_STATUS.COMPLETED;
 
       if (isInitialCompletion) {
@@ -55,7 +54,7 @@ function sessionReducer(state, action) {
           session: {
             ...state.session,
             answers: updatedAnswers,
-            currentIndex: TOTAL_ITEMS - 1,
+            currentIndex: totalItems - 1,
             status: SESSION_STATUS.COMPLETED,
             completedAt: new Date().toISOString(),
           }
@@ -67,8 +66,7 @@ function sessionReducer(state, action) {
         session: {
           ...state.session,
           answers: updatedAnswers,
-          currentIndex: sessionLogic.calculateNextIndex(state.session.currentIndex, TOTAL_ITEMS),
-          // すでに完了済みの場合はステータスを引き継ぐ
+          currentIndex: sessionLogic.calculateNextIndex(state.session.currentIndex, totalItems),
         }
       };
     }
@@ -140,6 +138,8 @@ function sessionReducer(state, action) {
 export function CheckSessionProvider({ children }) {
   const [state, dispatch] = useReducer(sessionReducer, initialState);
   const [saveError, setSaveError] = useState(null);
+  const { templateInfo, activeTemplate } = useTemplates();
+  const TOTAL_ITEMS = templateInfo.totalCount;
 
   // 初回読み込み
   useEffect(() => {
@@ -156,56 +156,32 @@ export function CheckSessionProvider({ children }) {
     }
   }, []);
 
-  // セッションが更新されるたびにLocalStorageに保存
-  // 完了後のメモ編集やPDF出力前のデータ保全のため、ステータスに関わらず保存する
+  // セッションが更新されるたびに自動保存
   useEffect(() => {
     if (state.session) {
       try {
         const success = saveCheckSession(state.session);
         if (!success) {
           logger.warn("Session auto-save returned false (possible quota exceeded)");
-           
           setSaveError("データの保存に失敗しました。ストレージ容量が不足している可能性があります。");
         } else {
-          // 保存成功時はエラーをクリア
-          if (saveError) {
-             
-            setSaveError(null);
-          }
-          
-          // 履歴保存 (COMPLETED の場合のみ)
+          if (saveError) setSaveError(null);
           if (state.session.status === SESSION_STATUS.COMPLETED) {
             import("../utils/storage").then(m => m.saveSessionToHistory(state.session));
           }
         }
       } catch (err) {
         logger.error("Failed to save session auto-sync", err);
-         
         setSaveError("データの保存中にエラーが発生しました。");
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.session]);
 
-  // #03 複数タブでのセッション競合検知
-  useEffect(() => {
-    const handleStorage = (e) => {
-      // セッションキーの変更、かつ他のタブからの変更を検知
-      if (e.key === "CheckSheet_Session") {
-        logger.warn("Session data modified in another tab");
-        dispatch({ 
-          type: "SET_SYNC_WARNING", 
-          payload: "別のタブでデータが更新されました。最新のデータを表示するにはページを再読み込みしてください。" 
-        });
-      }
-    };
-    window.addEventListener("storage", handleStorage);
-    return () => window.removeEventListener("storage", handleStorage);
-  }, []);
-
   const startNewSession = useCallback(({ siteName, inspector, memo }) => {
     const newSession = {
       checkId: generateCheckId(),
+      templateId: activeTemplate?.id || "default", // 使用したテンプレートIDを記録
       siteName,
       inspector,
       memo: memo || "",
@@ -215,19 +191,23 @@ export function CheckSessionProvider({ children }) {
       currentIndex: 0,
       answers: [],
       images: {},
+      gps: null,
     };
     clearCheckSession();
     dispatch({ type: "START_NEW", payload: newSession });
     return newSession;
-  }, []);
+  }, [activeTemplate]);
 
   const resumeActiveSession = useCallback(() => {
     dispatch({ type: "RESUME" });
   }, []);
 
   const updateAnswer = useCallback((item, answer, inputs) => {
-    dispatch({ type: "ANSWER_QUESTION", payload: { item, answer, inputs } });
-  }, []);
+    dispatch({ 
+        type: "ANSWER_QUESTION", 
+        payload: { item, answer, inputs, totalItems: TOTAL_ITEMS } 
+    });
+  }, [TOTAL_ITEMS]);
 
   const goToIndex = useCallback((index) => {
     dispatch({ type: "GO_TO_INDEX", payload: index });
@@ -242,7 +222,6 @@ export function CheckSessionProvider({ children }) {
   }, []);
 
   const removeImage = useCallback(async (itemId, imageId) => {
-    // IndexedDB から Blob を削除
     await deleteImageFromDb(imageId);
     dispatch({ type: "REMOVE_IMAGE", payload: { itemId, imageId } });
   }, []);
@@ -283,6 +262,7 @@ export function CheckSessionProvider({ children }) {
     clearSyncWarning,
     yesCount,
     noCount,
+    totalCount: TOTAL_ITEMS, // 動的な項目数を提供
     startNewSession,
     resumeActiveSession,
     updateAnswer,

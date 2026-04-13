@@ -4,11 +4,16 @@ import StartScreen from "./components/StartScreen";
 import ChatCheck from "./components/ChatCheck";
 import ResultScreen from "./components/ResultScreen";
 import HistoryScreen from "./components/HistoryScreen";
+import TemplateManager from "./components/admin/TemplateManager";
+import TemplateEditor from "./components/admin/TemplateEditor";
 import InstallPrompt from "./components/InstallPrompt";
 import Toast from "./components/common/Toast";
+import LoadingOverlay from "./components/common/LoadingOverlay";
 import { useCheckSession } from "./hooks/useCheckSession";
+import { useTemplates } from "./providers/TemplateContext";
 import { getAllItems } from "./data/checkItems";
 import { SCREENS } from "./constants/screens";
+import { getCurrentLocation } from "./utils/location";
 import logger from "./utils/logger";
 
 /**
@@ -19,6 +24,10 @@ export default function App() {
   const [screen, setScreen] = useState(SCREENS.HOME);
   const [viewHistorySession, setViewHistorySession] = useState(null);
   const [isEditingAfterComplete, setIsEditingAfterComplete] = useState(false);
+  const [isCapturingGps, setIsCapturingGps] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState(null);
+  
+  const { saveTemplate } = useTemplates();
   const { 
     session, 
     resumeSession, 
@@ -73,9 +82,27 @@ export default function App() {
   /**
    * チェック完了
    */
-  const handleComplete = (completedSession) => {
-    logger.info("Check completed", completedSession.checkId);
-    completeSession(completedSession);
+  const handleComplete = async () => {
+    logger.info("Check completed action started");
+    
+    // GPS位置情報の取得（最大3秒）
+    setIsCapturingGps(true);
+    let gpsUpdates = {};
+    try {
+      const gpsData = await getCurrentLocation();
+      if (gpsData) {
+        logger.info("GPS captured", gpsData);
+        gpsUpdates = { gps: gpsData };
+      } else {
+        logger.warn("GPS capture skipped or failed");
+      }
+    } catch (err) {
+      logger.error("Error during GPS capture", err);
+    } finally {
+      setIsCapturingGps(false);
+    }
+
+    completeSession(gpsUpdates);
     setIsEditingAfterComplete(false);
     setScreen(SCREENS.RESULT);
   };
@@ -145,6 +172,35 @@ export default function App() {
   };
 
   /**
+   * テンプレート管理を開く
+   */
+  const handleOpenAdmin = () => {
+    setScreen(SCREENS.ADMIN_TEMPLATES);
+  };
+
+  /**
+   * テンプレート編集画面へ遷移
+   */
+  const handleEditTemplate = (template) => {
+    setEditingTemplate(template);
+    setScreen(SCREENS.ADMIN_EDITOR);
+  };
+
+  /**
+   * テンプレート変更を保存
+   */
+  const handleSaveTemplate = async (updatedTemplate) => {
+    try {
+      await saveTemplate(updatedTemplate);
+      setEditingTemplate(null);
+      setScreen(SCREENS.ADMIN_TEMPLATES);
+      logger.info("Template saved and returned to list", updatedTemplate.id);
+    } catch (err) {
+      logger.error("Failed to save template", err);
+    }
+  };
+
+  /**
    * 特定の履歴詳細を閲覧する
    */
   const handleViewHistoryDetail = (historyData) => {
@@ -155,6 +211,7 @@ export default function App() {
   return (
     <div className="app">
       <InstallPrompt />
+      {isCapturingGps && <LoadingOverlay message="位置情報を取得中..." />}
 
       {screen === SCREENS.HOME && (
         <HomeScreen
@@ -162,6 +219,25 @@ export default function App() {
           onResume={handleResume}
           resumeSession={resumeSession}
           onOpenHistory={handleOpenHistory}
+          onOpenAdmin={handleOpenAdmin}
+        />
+      )}
+
+      {screen === SCREENS.ADMIN_TEMPLATES && (
+        <TemplateManager 
+          onBack={() => setScreen(SCREENS.HOME)}
+          onEditTemplate={handleEditTemplate}
+        />
+      )}
+
+      {screen === SCREENS.ADMIN_EDITOR && editingTemplate && (
+        <TemplateEditor 
+          template={editingTemplate}
+          onBack={() => {
+            setEditingTemplate(null);
+            setScreen(SCREENS.ADMIN_TEMPLATES);
+          }}
+          onSave={handleSaveTemplate}
         />
       )}
 

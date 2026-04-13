@@ -1,5 +1,4 @@
 import React from "react";
-import { TOTAL_ITEMS } from "../../data/checkItems";
 import { getItemImageIds } from "../../domain/sessionLogic";
 
 /**
@@ -11,8 +10,9 @@ import { getItemImageIds } from "../../domain/sessionLogic";
  * @param {number} yesCount - はいの数
  * @param {number} noCount - いいえの数
  * @param {object} imageUrls - { [imageId]: dataURL } 事前にプリロードされた画像
+ * @param {number} totalItems - 総項目数
  */
-const PDFTemplate = React.forwardRef(({ session, categorizedAnswers, yesCount, noCount, imageUrls = {} }, ref) => {
+const PDFTemplate = React.forwardRef(({ session, categorizedAnswers, yesCount, noCount, imageUrls = {}, totalItems }, ref) => {
   // 1ページあたりのウェイト上限目安（実測値に基づき、末尾の枠線切れを防ぐ微調整）
   const PAGE_LIMIT = 51; 
   const pages = [];
@@ -53,7 +53,24 @@ const PDFTemplate = React.forwardRef(({ session, categorizedAnswers, yesCount, n
             <tr>
               <td style={{ padding: "8px", border: "1px solid #ccc", background: "#f9f9f9" }}>結果</td>
               <td style={{ padding: "8px", border: "1px solid #ccc" }}>
-                はい: {yesCount}件 / いいえ: {noCount}件 (全{TOTAL_ITEMS}項目)
+                はい: {yesCount}件 / いいえ: {noCount}件 (全{totalItems}項目)
+              </td>
+            </tr>
+            <tr>
+              <td style={{ padding: "8px", border: "1px solid #ccc", background: "#f9f9f9" }}>位置情報</td>
+              <td style={{ padding: "8px", border: "1px solid #ccc" }}>
+                {session.gps ? (
+                  <a 
+                    href={`https://www.google.com/maps/search/?api=1&query=${session.gps.lat},${session.gps.lng}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: "#2563eb", textDecoration: "underline" }}
+                  >
+                    北緯: {session.gps.lat.toFixed(6)} / 東経: {session.gps.lng.toFixed(6)}
+                  </a>
+                ) : (
+                  "取得なし"
+                )}
               </td>
             </tr>
             <tr>

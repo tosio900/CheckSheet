@@ -1,9 +1,19 @@
 import { useState, useRef, useMemo } from "react";
-import { categories, TOTAL_ITEMS } from "../data/checkItems";
-import { generatePDF } from "../utils/pdfGenerator";
 import { useCheckSession } from "../hooks/useCheckSession";
+import { useTemplates } from "../providers/TemplateContext";
+import * as templateDb from "../utils/templateDb";
+import { generatePDF } from "../utils/pdfGenerator";
 import { getImage } from "../utils/imageDb";
-import { CheckCircle, XCircle, FileText, RotateCcw, Home, BadgeCheck } from "lucide-react";
+import { 
+  CheckCircle, 
+  XCircle, 
+  FileText, 
+  RotateCcw, 
+  Home, 
+  BadgeCheck, 
+  MapPin,
+  ExternalLink
+} from "lucide-react";
 import PDFTemplate from "./check/PDFTemplate";
 import logger from "../utils/logger";
 import styles from "./ResultScreen.module.css";
@@ -13,12 +23,27 @@ import styles from "./ResultScreen.module.css";
  */
 export default function ResultScreen({ sessionOverride, onRestart, onGoHome, onEdit, onUpdateMemo, isReadOnly }) {
   const contextSession = useCheckSession();
+  const { templates, activeTemplate } = useTemplates();
   const session = sessionOverride || contextSession.session;
   
   const [isPdfGenerating, setIsPdfGenerating] = useState(false);
   const [pdfError, setPdfError] = useState(null);
   const [imageUrls, setImageUrls] = useState({});
   const pdfRef = useRef(null);
+
+  // 使用されたテンプレートを特定し、項目情報を解析
+  const { displayTemplate, TOTAL_ITEMS } = useMemo(() => {
+    if (!session || !templates.length) return { displayTemplate: null, TOTAL_ITEMS: 0 };
+    
+    const tId = session.templateId || "default";
+    const found = templates.find(t => t.id === tId) || activeTemplate || templates[0];
+    const info = templateDb.processTemplate(found);
+    
+    return {
+      displayTemplate: found,
+      TOTAL_ITEMS: info.totalCount
+    };
+  }, [session, templates, activeTemplate]);
 
   /**
    * 計算用状態（Override時は再計算する）
@@ -41,10 +66,11 @@ export default function ResultScreen({ sessionOverride, onRestart, onGoHome, onE
   }, [sessionOverride, session.answers, contextSession.noCount]);
 
   /**
-   * カテゴリ別に回答をグループ化
+   * カテゴリ別に回答をグループ化 (動的なテンプレート構造に基づく)
    */
   const categorizedAnswers = useMemo(() => {
-    return categories.map((cat) => {
+    if (!displayTemplate) return [];
+    return displayTemplate.categories.map((cat) => {
       const catAnswers = cat.items.map((item) => {
         const answer = answerMap.get(item.id);
         return {
@@ -58,7 +84,7 @@ export default function ResultScreen({ sessionOverride, onRestart, onGoHome, onE
         answers: catAnswers,
       };
     });
-  }, [answerMap]);
+  }, [displayTemplate, answerMap]);
 
   /**
    * PDF出力ハンドラ（画像プリロード付き）
@@ -128,6 +154,25 @@ export default function ResultScreen({ sessionOverride, onRestart, onGoHome, onE
           <span className={styles["result-info-label"]}>実施日時</span>
           <span className={styles["result-info-value"]}>
             {session.completedAt ? new Date(session.completedAt).toLocaleString("ja-JP") : "-"}
+          </span>
+        </div>
+        <div className={styles["result-info-row"]}>
+          <span className={styles["result-info-label"]}>位置情報</span>
+          <span className={styles["result-info-value"]}>
+            {session.gps ? (
+              <a 
+                href={`https://www.google.com/maps/search/?api=1&query=${session.gps.lat},${session.gps.lng}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ display: "inline-flex", alignItems: "center", gap: "4px", color: "var(--color-primary)", textDecoration: "none" }}
+              >
+                <MapPin size={12} />
+                北緯: {session.gps.lat.toFixed(6)} / 東経: {session.gps.lng.toFixed(6)}
+                <ExternalLink size={12} />
+              </a>
+            ) : (
+              "取得なし"
+            )}
           </span>
         </div>
       </div>
@@ -215,6 +260,7 @@ export default function ResultScreen({ sessionOverride, onRestart, onGoHome, onE
         yesCount={yesCount} 
         noCount={noCount}
         imageUrls={imageUrls}
+        totalItems={TOTAL_ITEMS}
       />
     </div>
   );

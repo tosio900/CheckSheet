@@ -8,4 +8,6 @@ export const SCREENS = Object.freeze({
   CHECK: "check",
   RESULT: "result",
   HISTORY: "history",
+  ADMIN_TEMPLATES: "admin_templates",
+  ADMIN_EDITOR: "admin_editor",
 });

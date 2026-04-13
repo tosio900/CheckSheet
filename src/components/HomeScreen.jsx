@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { ClipboardList, AlertTriangle, PenTool, History } from "lucide-react";
-import { TOTAL_ITEMS } from "../data/checkItems";
+import { ClipboardList, AlertTriangle, PenTool, History, Settings } from "lucide-react";
+import { useTemplates } from "../providers/TemplateContext";
 import ConfirmModal from "./common/ConfirmModal";
 import styles from "./HomeScreen.module.css";
 
@@ -10,7 +10,9 @@ import styles from "./HomeScreen.module.css";
  * - 中断中セッションの再開/破棄
  * - 過去履歴の閲覧
  */
-export default function HomeScreen({ onStartNew, onResume, resumeSession, onOpenHistory }) {
+export default function HomeScreen({ onStartNew, onResume, resumeSession, onOpenHistory, onOpenAdmin }) {
+  const { templateInfo } = useTemplates();
+  const TOTAL_ITEMS = templateInfo.totalCount;
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
 
   return (
@@ -77,6 +79,15 @@ export default function HomeScreen({ onStartNew, onResume, resumeSession, onOpen
         >
           <History size={20} /> 過去の履歴を見る
         </button>
+
+        {/* テンプレート管理ボタン */}
+        <button
+          className="btn btn-outline btn-lg btn-block"
+          style={{ marginTop: "12px", background: "white", color: "var(--color-primary)", border: "2px solid var(--color-primary)" }}
+          onClick={onOpenAdmin}
+        >
+          <Settings size={20} /> チェックリスト設定
+        </button>
       </div>
 
       {/* 破棄確認ダイアログ */}
@@ -99,6 +110,25 @@ export default function HomeScreen({ onStartNew, onResume, resumeSession, onOpen
           onCancel={() => setShowDiscardConfirm(false)}
         />
       )}
+
+      {/* 問い合わせセクション */}
+      <div className={styles["home-contact"]}>
+        <h4>アプリに関するお問い合わせ先</h4>
+        <div className={styles["contact-info"]}>
+          <div className={styles["contact-item"]}>
+            <span className={styles["contact-label"]}>担当部署：</span>
+            <span>現場DX推進部（社内）</span>
+          </div>
+          <div className={styles["contact-item"]}>
+            <span className={styles["contact-label"]}>担当者名：</span>
+            <span>管理者（内線：1234）</span>
+          </div>
+          <div className={styles["contact-item"]}>
+            <span className={styles["contact-label"]}>電話番号：</span>
+            <span>000-0000-0000（社用携帯）</span>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

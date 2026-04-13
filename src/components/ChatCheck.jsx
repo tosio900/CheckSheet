@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { getAllItems, TOTAL_ITEMS } from "../data/checkItems";
 import { useCheckSession } from "../hooks/useCheckSession";
+import { useTemplates } from "../providers/TemplateContext";
 import ProgressHeader from "./check/ProgressHeader";
 import QuestionCard from "./check/QuestionCard";
 import AnswerControls from "./check/AnswerControls";
@@ -14,7 +14,10 @@ import styles from "./ChatCheck.module.css";
  * チェック実行画面（メインチェック画面）
  */
 export default function ChatCheck({ onComplete, onExit, isEditingAfterComplete }) {
-  const allItems = getAllItems();
+  const { templateInfo } = useTemplates();
+  const allItems = templateInfo.items;
+  const TOTAL_ITEMS = templateInfo.totalCount;
+
   const { 
     session, 
     updateAnswer, 
@@ -74,7 +77,7 @@ export default function ChatCheck({ onComplete, onExit, isEditingAfterComplete }
 
     if (totalAnsweredCount >= TOTAL_ITEMS && !isEditingAfterComplete) {
       logger.info("Auto-completing session after last answer", { totalAnsweredCount });
-      onComplete(session);
+      onComplete();
     }
   };
 
@@ -133,7 +136,7 @@ export default function ChatCheck({ onComplete, onExit, isEditingAfterComplete }
               isInputIncomplete={isInputIncomplete}
               onAnswer={handleAnswer}
               onBack={handleBack}
-              onComplete={() => onComplete(session)}
+              onComplete={() => onComplete()}
               showCompleteBtn={answers.length === TOTAL_ITEMS}
           />
         </>
