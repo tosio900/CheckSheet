@@ -39,15 +39,16 @@ export async function generatePDF(element, sessionData) {
       const pageEl = pages[i];
       
       // html2canvasでページごとにキャンバスに描画
+      // scrollHeight: minHeight による水増しを除き、実コンテンツの高さを取得する
       const canvas = await html2canvas(pageEl, {
         scale: 2, // 高解像度
         useCORS: true,
         logging: false,
         backgroundColor: "#ffffff",
         width: pageEl.offsetWidth,
-        height: pageEl.offsetHeight,
+        height: pageEl.scrollHeight,
         windowWidth: pageEl.offsetWidth,
-        windowHeight: pageEl.offsetHeight,
+        windowHeight: pageEl.scrollHeight,
       });
       
       const imgHeight = (canvas.height * imgWidth) / canvas.width;

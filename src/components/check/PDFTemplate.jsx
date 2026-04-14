@@ -14,10 +14,12 @@ import { getItemImageIds } from "../../domain/sessionLogic";
  */
 const PDFTemplate = React.forwardRef(({ session, categorizedAnswers, yesCount, noCount, imageUrls = {}, totalItems }, ref) => {
   // ウェイト設計: 1 weight ≒ 23.6px（実観測値: PAGE_LIMIT=55→DOM 1298px, 1298÷55=23.6）
-  // A4有効高さ: minHeight(1244px) → 1244÷23.6 ≒ 52.7 weight が上限
-  // 安全マージン込みで PAGE_LIMIT = 51（元の実測キャリブレーション値）
-  // ※ 本質的な画像対応は imagesWeight 係数(10.5)で担保している
+  // A4有効高さ: scrollHeight ベース → 1244÷23.6 ≒ 52.7 weight が上限
+  // 安全マージン込みで PAGE_LIMIT = 51
   const PAGE_LIMIT = 51;
+  // 画像行ウェイト定数: 170px(maxH150+padding上8+下12) ÷ 23.6px/weight ≈ 7.2
+  // 安全マージン込みで 8.0 に設定（全体ウェイト係数と統一）
+  const IMAGES_WEIGHT_PER_ROW = 8.0;
   const pages = [];
   let currentPageNodes = [];
   let currentWeight = 0;
@@ -96,8 +98,14 @@ const PDFTemplate = React.forwardRef(({ session, categorizedAnswers, yesCount, n
   // 2. 質問項目のチャンク化
   categorizedAnswers.forEach((cat) => {
     // 題目(2.0) + 最初の1問が入るスペースがあるか判定
+    // ※ 最初の項目に画像がある場合も imagesWeight を含めて正確に判定する
     const firstItem = cat.answers[0];
-    const firstItemWeight = firstItem ? (firstItem.inputs ? 2.8 : 1.7) : 1.7;
+    const firstItemImageRows = firstItem
+      ? Math.ceil(getItemImageIds(sessionImages, firstItem.id).length / 3)
+      : 0;
+    const firstItemWeight = firstItem
+      ? (firstItem.inputs ? 2.8 : 1.7) + firstItemImageRows * IMAGES_WEIGHT_PER_ROW
+      : 1.7;
     const requiredWeightForHeader = 2.0 + firstItemWeight;
 
     if (currentWeight + requiredWeightForHeader > PAGE_LIMIT) {
@@ -116,11 +124,11 @@ const PDFTemplate = React.forwardRef(({ session, categorizedAnswers, yesCount, n
 
     cat.answers.forEach((item) => {
       // 画像行の実高さ: maxHeight(150px) + padding(上8px + 下12px) = 170px
-      // 1 weight ≒ 18px → 170 / 18 ≒ 9.4 → 安全マージン込みで 10.5
+      // IMAGES_WEIGHT_PER_ROW(8.0) = 170px ÷ 23.6px/weight ≈ 7.2 + 安全マージン
       // 1行あたり3枚: 幅(880-80-40)=760px, 1枚200px+gap8px → 3枚=616px
       const itemImageIds = getItemImageIds(sessionImages, item.id);
       const imageRows = Math.ceil(itemImageIds.length / 3);
-      const imagesWeight = imageRows * 10.5;
+      const imagesWeight = imageRows * IMAGES_WEIGHT_PER_ROW;
 
       // 項目ベースWeight: 入力あり=2.8, 入力なし=1.7
       let itemWeight = (item.inputs ? 2.8 : 1.7) + imagesWeight;
@@ -222,13 +230,14 @@ const PDFTemplate = React.forwardRef(({ session, categorizedAnswers, yesCount, n
       {pages.map((pageNodes, idx) => (
         <div key={idx} className="pdf-page" style={{
           width: "880px",
-          minHeight: "1244px", // A4縦の比率を担保
+          // minHeight は設定しない: scrollHeight で実コンテンツ高さのみキャンバス化するため
+          // 最終ページで余分な空白が生まれないようにする
           backgroundColor: "#ffffff",
           padding: "40px",
           boxSizing: "border-box",
           color: "#000000",
           fontFamily: "sans-serif",
-          overflow: "hidden" 
+          overflow: "hidden"
         }}>
           {pageNodes}
         </div>
