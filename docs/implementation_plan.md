@@ -1,29 +1,37 @@
-# テスト実行と再デプロイ計画
+# 問い合わせ先削除計画
 
-エラーのない最新の状態を保証するため、一連のテスト・ビルド工程を実行し、問題がなければ再デプロイを行います。
+ホーム画面に表示されている「アプリに関するお問い合わせ先」セクションおよび関連するスタイルを削除します。
 
 ## ユーザーレビューが必要な項目
-- **デプロイ方法**: 現在の構成ではGitHubの `main` ブランチへのプッシュで自動デプロイされるよう設定されています。現在、変更がないため、再デプロイを強制するには空のコミットを行うか、GitHub CLI（利用可能な場合）でワークフローを手動実行する必要があります。
+- 特になし。
 
 ## 提案される手順
 
-### 1. 検証・修正フェーズ
-以下の作業を行い、エラーのない状態を確実にします。
-- **Lint警告の修正**: `src/components/ChatCheck.jsx` の `useEffect` 依存配列の修正。
-- **ユニットテスト**: `npm run test` (Vitest) を再実行。
-- **静的解析**: `npm run lint` (ESLint) を再実行。
-- **ビルド実行**: `npm run build` (Vite) を再実行してビルドエラーがないか最終確認。
+### 1. HomeScreen.jsx の修正
+- [MODIFY] [HomeScreen.jsx](file:///c:/Users/t-matsuki/Desktop/CheckSheet/src/components/HomeScreen.jsx)
+  - `home-contact` クラスを持つ `div` セクション全体（114行目〜131行目付近）を削除します。
 
-### 2. デプロイフェーズ
-検証が全て成功した場合、以下の方法でデプロイをトリガーします。
-- **空コミットによるトリガー**: `git commit --allow-empty -m "chore: trigger redeploy after verification"` を実行し、`git push` します。GitHub CLIが環境に存在しないため、この方法を採用します。
+### 2. HomeScreen.module.css の修正
+- [MODIFY] [HomeScreen.module.css](file:///c:/Users/t-matsuki/Desktop/CheckSheet/src/components/HomeScreen.module.css)
+  - 問い合わせセクションに関連する以下のスタイル定義を削除します：
+    - `.home-contact`
+    - `.home-contact h4`
+    - `.contact-info`
+    - `.contact-item`
+    - `.contact-label`
+
+### 3. 検証
+- 修正後に `npm run lint` を実行し、参照エラーなどが発生していないか確認します。
+- `npm run build` を実行し、ビルドが成功することを確認します。
 
 ## オープンな質問
-- [IMPORTANT] デプロイ実行のために空のコミットをプッシュしてもよろしいでしょうか？（GitHub Actionsを起動するために必要です）
+- 特になし。
 
 ## 検証プラン
 
 ### 自動テスト
-- `npm run test` の正常終了を確認
 - `npm run lint` の正常終了を確認
 - `npm run build` の正常終了を確認
+
+### 手動確認
+- ブラウザツールを使用して、ホーム画面から問い合わせ先セクションが消えていることを確認します。

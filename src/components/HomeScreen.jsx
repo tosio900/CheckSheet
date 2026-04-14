@@ -111,24 +111,6 @@ export default function HomeScreen({ onStartNew, onResume, resumeSession, onOpen
         />
       )}
 
-      {/* 問い合わせセクション */}
-      <div className={styles["home-contact"]}>
-        <h4>アプリに関するお問い合わせ先</h4>
-        <div className={styles["contact-info"]}>
-          <div className={styles["contact-item"]}>
-            <span className={styles["contact-label"]}>担当部署：</span>
-            <span>現場DX推進部（社内）</span>
-          </div>
-          <div className={styles["contact-item"]}>
-            <span className={styles["contact-label"]}>担当者名：</span>
-            <span>管理者（内線：1234）</span>
-          </div>
-          <div className={styles["contact-item"]}>
-            <span className={styles["contact-label"]}>電話番号：</span>
-            <span>000-0000-0000（社用携帯）</span>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }

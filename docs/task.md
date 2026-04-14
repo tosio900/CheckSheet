@@ -1,6 +1,6 @@
 # タスクリスト
 
-- [x] Lint警告の修正 (`src/components/ChatCheck.jsx`)
-- [/] 最終検証 (Test, Lint, Build)
-- [ ] 変更内容のコミットとプッシュ (デプロイ実行)
-- [ ] 修正内容の確認 (Walkthrough) の作成
+- [x] HomeScreen.jsx から問い合わせ先セクションを削除
+- [x] HomeScreen.module.css から関連スタイルを削除
+- [x] 最終検証 (Lint, Build)
+- [x] 修正内容の確認 (Walkthrough) の作成
