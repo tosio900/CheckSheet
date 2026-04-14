@@ -13,8 +13,11 @@ import { getItemImageIds } from "../../domain/sessionLogic";
  * @param {number} totalItems - 総項目数
  */
 const PDFTemplate = React.forwardRef(({ session, categorizedAnswers, yesCount, noCount, imageUrls = {}, totalItems }, ref) => {
-  // 1ページあたりのウェイト上限目安（実測値に基づき、末尾の枠線切れを防ぐ微調整）
-  const PAGE_LIMIT = 51; 
+  // ウェイト設計: 1 weight ≒ 23.6px（実観測値: PAGE_LIMIT=55→DOM 1298px, 1298÷55=23.6）
+  // A4有効高さ: minHeight(1244px) → 1244÷23.6 ≒ 52.7 weight が上限
+  // 安全マージン込みで PAGE_LIMIT = 51（元の実測キャリブレーション値）
+  // ※ 本質的な画像対応は imagesWeight 係数(10.5)で担保している
+  const PAGE_LIMIT = 51;
   const pages = [];
   let currentPageNodes = [];
   let currentWeight = 0;
@@ -112,13 +115,22 @@ const PDFTemplate = React.forwardRef(({ session, categorizedAnswers, yesCount, n
     currentWeight += 2.0;
 
     cat.answers.forEach((item) => {
-      // 画像のウェイト計算: 3枚で1行、1行あたり約 7.5 ウェイト
+      // 画像行の実高さ: maxHeight(150px) + padding(上8px + 下12px) = 170px
+      // 1 weight ≒ 18px → 170 / 18 ≒ 9.4 → 安全マージン込みで 10.5
+      // 1行あたり3枚: 幅(880-80-40)=760px, 1枚200px+gap8px → 3枚=616px
       const itemImageIds = getItemImageIds(sessionImages, item.id);
       const imageRows = Math.ceil(itemImageIds.length / 3);
-      const imagesWeight = imageRows * 7.5;
+      const imagesWeight = imageRows * 10.5;
 
       // 項目ベースWeight: 入力あり=2.8, 入力なし=1.7
       let itemWeight = (item.inputs ? 2.8 : 1.7) + imagesWeight;
+
+      // [DEBUG] 各項目の weight 累計をコンソールに出力（開発環境のみ）
+      if (import.meta.env.DEV) {
+        console.debug(
+          `[PDF] ${cat.name} / "${item.question?.slice(0, 20)}" | weight=${itemWeight.toFixed(1)} | cumulative=${(currentWeight + itemWeight).toFixed(1)}/${PAGE_LIMIT}`
+        );
+      }
 
       if (currentWeight + itemWeight > PAGE_LIMIT) {
         pages.push(currentPageNodes);

@@ -52,7 +52,13 @@ export async function generatePDF(element, sessionData) {
       
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
       const imgData = canvas.toDataURL("image/jpeg", 0.95);
-      
+
+      // A4ページ高さ(297mm)を超えていた場合、警告ログを出力
+      // → PDFTemplate.jsx の PAGE_LIMIT 設定が小さすぎることを示す
+      if (imgHeight > 297) {
+        logger.warn(`[PDF] Page ${i + 1} height overflow: ${imgHeight.toFixed(1)}mm > 297mm. PDFTemplate.jsx の PAGE_LIMIT を下げてください。`);
+      }
+
       if (i > 0) {
         pdf.addPage();
       }

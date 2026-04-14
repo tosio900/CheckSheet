@@ -8,7 +8,8 @@
   background: rgba(0, 0, 0, 0.95);
   display: flex;
   flex-direction: column;
-  touch-action: none; /* iOS のスクロール・ズームを完全に抑制 */
+  overflow-y: auto;
+  /* 少小端末で視口に入りきらない場合にスクロールを許可 */
 }
 
 .annotator-header {
@@ -72,7 +73,7 @@
   background: var(--color-primary-dark);
 }
 
-/* Canvas 表示領域 */
+/* Canvas 表示領域: 描画操作のためタッチを追跡する必要がある */
 .annotator-canvas-container {
   flex: 1;
   display: flex;
@@ -80,6 +81,8 @@
   justify-content: center;
   overflow: hidden;
   position: relative;
+  touch-action: none;
+  /* キャンバス描画領域のみタッチ操作を制限（ヘッダー・ツールバーには影響しない） */
 }
 
 .annotator-canvas {
@@ -146,10 +149,14 @@
 
 /* ============================================
    小画面（iPhone SE等）向けの最適化
+   ブレークポイント：高さ 700px 以下を小画面と判定
+   (旧: 600px → 新: 700px に拡張)
    ============================================ */
-@media (max-height: 600px) {
+@media (max-height: 700px) {
   .annotator-header {
     padding: var(--space-2) var(--space-3);
+    min-height: 48px;
+    /* タッチターゲット最小化 */
   }
 
   .annotator-title {
@@ -164,6 +171,7 @@
   .annotator-toolbar {
     padding: var(--space-2) var(--space-2);
     gap: var(--space-2);
+    flex-wrap: nowrap;
   }
 
   /* 

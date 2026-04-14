@@ -11,21 +11,23 @@
 }
 
 .start-header {
-  text-align: center;
-  margin-bottom: var(--space-8);
-  padding-top: var(--space-8);
+  text-align: left;
+  margin-bottom: var(--space-6);
+  padding-top: var(--space-6);
 }
 
 .start-header h1 {
   font-size: var(--font-size-xl);
   font-weight: var(--font-weight-bold);
   color: var(--color-text);
-  margin-bottom: var(--space-2);
+  margin-bottom: var(--space-1);
+  letter-spacing: -0.01em;
 }
 
 .start-header p {
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
+  line-height: 1.5;
 }
 
 .start-form {
@@ -38,7 +40,7 @@
 .start-actions {
   margin-top: auto;
   padding-top: var(--space-6);
-  padding-bottom: var(--space-6);
+  padding-bottom: env(safe-area-inset-bottom, var(--space-6));
   display: flex;
   flex-direction: column;
   gap: var(--space-3);

@@ -73,8 +73,7 @@ export default function HomeScreen({ onStartNew, onResume, resumeSession, onOpen
         
         {/* 過去履歴を閲覧ボタン */}
         <button
-          className="btn btn-secondary btn-lg btn-block"
-          style={{ marginTop: "12px", background: "#f1f5f9", color: "#334155", border: "1px solid #cbd5e1" }}
+          className={`btn btn-secondary btn-lg btn-block ${styles["home-btn-history"]}`}
           onClick={onOpenHistory}
         >
           <History size={20} /> 過去の履歴を見る
@@ -82,8 +81,7 @@ export default function HomeScreen({ onStartNew, onResume, resumeSession, onOpen
 
         {/* テンプレート管理ボタン */}
         <button
-          className="btn btn-outline btn-lg btn-block"
-          style={{ marginTop: "12px", background: "white", color: "var(--color-primary)", border: "2px solid var(--color-primary)" }}
+          className={`btn btn-lg btn-block ${styles["home-btn-admin"]}`}
           onClick={onOpenAdmin}
         >
           <Settings size={20} /> チェックリスト設定

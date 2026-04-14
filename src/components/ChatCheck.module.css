@@ -53,9 +53,9 @@
 /* プログレス（進捗）バー周辺 */
 .progress-container {
   margin-top: var(--space-2);
-  margin-bottom: var(--space-2);
-  height: 38px;
-  /* 完全固定高さ：タイトル(約20px) + バー(約14px) + 余白 */
+  margin-bottom: var(--space-3);
+  height: 40px;
+  /* 完全固定高さ：タイトル(終20px) + バー(終16px) + 余白 */
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -90,22 +90,23 @@
 
 .progress-bar-track {
   width: 100%;
-  height: 8px;
+  height: 12px;
   background: var(--color-border-light);
   border-radius: var(--radius-full);
   overflow: hidden;
   margin-top: auto;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 .progress-bar-fill {
   height: 100%;
-  background: var(--color-primary);
+  background: linear-gradient(90deg, var(--color-primary), var(--color-primary-dark));
   border-radius: var(--radius-full);
-  transition: width 0.3s ease;
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 4px rgba(16, 185, 129, 0.4);
 }
 
-/* 質問カード領域（高さ固定・内容が長い場合のみカード内スクロール） */
+/* 質問カード領域（高さ固定・画面が小さい場合にコンテナスクロール） */
 .check-content.fixed-layout {
   flex: 1;
   display: flex;
@@ -115,7 +116,24 @@
   padding: var(--space-4);
   /* 独立した回答エリアへの余白確保 */
   overflow-y: auto;
-  /* 万が一画面が小さい場合のみスクロール */
+  /* 画面が小さい場合のみスクロール */
+  scrollbar-width: thin;
+  /* スクロールバーを細型に（Firefox） */
+  scrollbar-color: var(--color-border) transparent;
+}
+
+/* Webkit系ブラウザ向けスクロールバー細型化（Chrome/Safari） */
+.check-content.fixed-layout::-webkit-scrollbar {
+  width: 4px;
+}
+
+.check-content.fixed-layout::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.check-content.fixed-layout::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: var(--radius-full);
 }
 
 /* 質問カード */
@@ -126,7 +144,7 @@
   box-shadow: var(--shadow-lg);
   border: 1px solid var(--color-border-light);
   margin: 0;
-  /* マージンを消して上部にピッタリ寄せる */
+  /* overflowはみつかツかない: コンテナ側の overflow-y:auto がスクロールを担当 */
 }
 
 .question-number {
@@ -175,9 +193,11 @@
 /* 回答ボタンエリア（常に画面下部に固定） */
 .answer-area.fixed-bottom {
   flex-shrink: 0;
-  padding: 0 var(--space-4) var(--space-4);
+  padding: var(--space-3) var(--space-4) var(--space-4);
+  padding-bottom: max(var(--space-4), env(safe-area-inset-bottom));
   background: var(--color-bg-gradient);
   /* 背景と同じグラデーションで自然に */
+  border-top: 1px solid var(--color-border-light);
 }
 
 .answer-buttons {
