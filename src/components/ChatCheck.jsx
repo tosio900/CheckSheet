@@ -70,7 +70,7 @@ export default function ChatCheck({ onComplete, onExit, isEditingAfterComplete }
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [currentInputs, currentItem?.id, updateDraft]);
+  }, [currentInputs, currentItem?.id, currentItem, updateDraft]);
 
   const handleAnswer = (answer) => {
     if (!currentItem) return;
