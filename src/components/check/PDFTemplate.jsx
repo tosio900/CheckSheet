@@ -4,6 +4,7 @@ import { getItemImageIds } from "../../domain/sessionLogic";
 /**
  * PDF出力用のテンプレートコンポーネント (ページ分割対応)
  * 画像添付にも対応: 各項目の下に添付写真を表示する
+ * 画像は行単位（3枚/行）で改ページ可能。質問+回答+1行目画像はアトミック。
  *
  * @param {object} session - セッションデータ
  * @param {Array} categorizedAnswers - カテゴリ別回答
@@ -17,12 +18,22 @@ const PDFTemplate = React.forwardRef(({ session, categorizedAnswers, yesCount, n
   // A4有効高さ: scrollHeight ベース → 1244÷23.6 ≒ 52.7 weight が上限
   // 安全マージン込みで PAGE_LIMIT = 51
   const PAGE_LIMIT = 51;
-  // 画像行ウェイト定数: 170px(maxH150+padding上8+下12) ÷ 23.6px/weight ≈ 7.2
-  // 安全マージン込みで 8.0 に設定（全体ウェイト係数と統一）
-  const IMAGES_WEIGHT_PER_ROW = 8.0;
+  // 画像行ウェイト定数: 画像ボックス180px + padding上下(8+12)20px = 200px
+  // 200px ÷ 23.6px/weight ≈ 8.47 → 安全マージン込みで 9.0 に設定
+  const IMAGES_WEIGHT_PER_ROW = 9.0;
+  // 1行あたりの最大画像枚数: 240px×3 + gap8px×2 = 736px（利用可能760px以内）
+  const IMAGES_PER_ROW = 3;
+
   const pages = [];
   let currentPageNodes = [];
   let currentWeight = 0;
+
+  // 改ページヘルパー
+  const breakPage = () => {
+    pages.push(currentPageNodes);
+    currentPageNodes = [];
+    currentWeight = 0;
+  };
 
   const sessionImages = session.images || {};
 
@@ -65,7 +76,7 @@ const PDFTemplate = React.forwardRef(({ session, categorizedAnswers, yesCount, n
               <td style={{ padding: "8px", border: "1px solid #ccc", background: "#f9f9f9" }}>位置情報</td>
               <td style={{ padding: "8px", border: "1px solid #ccc" }}>
                 {session.gps ? (
-                  <a 
+                  <a
                     href={`https://www.google.com/maps/search/?api=1&query=${session.gps.lat},${session.gps.lng}`}
                     target="_blank"
                     rel="noopener noreferrer"
@@ -97,21 +108,19 @@ const PDFTemplate = React.forwardRef(({ session, categorizedAnswers, yesCount, n
 
   // 2. 質問項目のチャンク化
   categorizedAnswers.forEach((cat) => {
-    // 題目(2.0) + 最初の1問が入るスペースがあるか判定
-    // ※ 最初の項目に画像がある場合も imagesWeight を含めて正確に判定する
+    // カテゴリヘッダー + 最初の項目のアンカーウェイト（質問+1行目画像）で改ページ判定
     const firstItem = cat.answers[0];
     const firstItemImageRows = firstItem
-      ? Math.ceil(getItemImageIds(sessionImages, firstItem.id).length / 3)
+      ? Math.ceil(getItemImageIds(sessionImages, firstItem.id).length / IMAGES_PER_ROW)
       : 0;
-    const firstItemWeight = firstItem
-      ? (firstItem.inputs ? 2.8 : 1.7) + firstItemImageRows * IMAGES_WEIGHT_PER_ROW
+    // アンカーウェイト = 質問+回答 + 1行目画像のみ（2行目以降は別途判定）
+    const firstItemAnchorWeight = firstItem
+      ? (firstItem.inputs ? 2.8 : 1.7) + (firstItemImageRows > 0 ? IMAGES_WEIGHT_PER_ROW : 0)
       : 1.7;
-    const requiredWeightForHeader = 2.0 + firstItemWeight;
+    const requiredWeightForHeader = 2.0 + firstItemAnchorWeight;
 
     if (currentWeight + requiredWeightForHeader > PAGE_LIMIT) {
-      pages.push(currentPageNodes);
-      currentPageNodes = [];
-      currentWeight = 0;
+      breakPage();
     }
 
     // カテゴリヘッダー
@@ -123,91 +132,133 @@ const PDFTemplate = React.forwardRef(({ session, categorizedAnswers, yesCount, n
     currentWeight += 2.0;
 
     cat.answers.forEach((item) => {
-      // 画像行の実高さ: maxHeight(150px) + padding(上8px + 下12px) = 170px
-      // IMAGES_WEIGHT_PER_ROW(8.0) = 170px ÷ 23.6px/weight ≈ 7.2 + 安全マージン
-      // 1行あたり3枚: 幅(880-80-40)=760px, 1枚200px+gap8px → 3枚=616px
       const itemImageIds = getItemImageIds(sessionImages, item.id);
-      const imageRows = Math.ceil(itemImageIds.length / 3);
-      const imagesWeight = imageRows * IMAGES_WEIGHT_PER_ROW;
+      const imageRowCount = Math.ceil(itemImageIds.length / IMAGES_PER_ROW);
+      const questionWeight = item.inputs ? 2.8 : 1.7;
 
-      // 項目ベースWeight: 入力あり=2.8, 入力なし=1.7
-      let itemWeight = (item.inputs ? 2.8 : 1.7) + imagesWeight;
+      // ── アンカーウェイト（質問+回答+1行目画像）で改ページ判定 ──
+      // 質問と最初の写真は必ず同じページに収める
+      const firstRowWeight = imageRowCount > 0 ? IMAGES_WEIGHT_PER_ROW : 0;
+      const anchorWeight = questionWeight + firstRowWeight;
 
-      // [DEBUG] 各項目の weight 累計をコンソールに出力（開発環境のみ）
       if (import.meta.env.DEV) {
         console.debug(
-          `[PDF] ${cat.name} / "${item.question?.slice(0, 20)}" | weight=${itemWeight.toFixed(1)} | cumulative=${(currentWeight + itemWeight).toFixed(1)}/${PAGE_LIMIT}`
+          `[PDF] ${cat.name} / "${item.question?.slice(0, 20)}" | anchorW=${anchorWeight.toFixed(1)} | cumulative=${(currentWeight + anchorWeight).toFixed(1)}/${PAGE_LIMIT}`
         );
       }
 
-      if (currentWeight + itemWeight > PAGE_LIMIT) {
-        pages.push(currentPageNodes);
-        currentPageNodes = [];
-        currentWeight = 0;
+      if (currentWeight + anchorWeight > PAGE_LIMIT) {
+        breakPage();
       }
 
+      // ── 質問+回答ノードを追加 ──
+      // 画像がある場合はボーダーを外し、直下の画像行が続くようにする
       const hasImages = itemImageIds.length > 0;
-
       currentPageNodes.push(
-        <div key={`item-${item.id}`}>
-          <div style={{ padding: "8px 10px", borderBottom: hasImages ? "none" : "1px solid #eee", display: "flex", alignItems: "flex-start", fontSize: "14px", background: "#fff" }}>
-            <span style={{
-              minWidth: "30px",
-              fontWeight: "bold",
-              color: item.answer === "yes" ? "#10b981" : "#ef4444"
-            }}>
-              {item.answer === "yes" ? "✓" : "✗"}
-            </span>
-            <div style={{ flex: 1 }}>
-              <div color="#000">{item.question}</div>
-              {item.inputs && (
-                <div style={{ fontSize: "12px", color: "#666", marginTop: "4px" }}>
-                  → {Object.entries(item.inputs).map(([k, v]) => `${k}: ${v || '-'}`).join(' / ')}
-                </div>
-              )}
-            </div>
+        <div
+          key={`q-${item.id}`}
+          style={{
+            padding: "8px 10px",
+            borderBottom: hasImages ? "none" : "1px solid #eee",
+            display: "flex",
+            alignItems: "flex-start",
+            fontSize: "14px",
+            background: "#fff",
+          }}
+        >
+          <span style={{
+            minWidth: "30px",
+            fontWeight: "bold",
+            color: item.answer === "yes" ? "#10b981" : "#ef4444",
+          }}>
+            {item.answer === "yes" ? "✓" : "✗"}
+          </span>
+          <div style={{ flex: 1 }}>
+            <div style={{ color: "#000" }}>{item.question}</div>
+            {item.inputs && (
+              <div style={{ fontSize: "12px", color: "#666", marginTop: "4px" }}>
+                → {Object.entries(item.inputs).map(([k, v]) => `${k}: ${v || '-'}`).join(' / ')}
+              </div>
+            )}
           </div>
-          {/* 添付画像エリア */}
-          {hasImages && (
-            <div style={{ 
-              padding: "8px 10px 12px 40px", 
-              borderBottom: "1px solid #eee",
+        </div>
+      );
+      currentWeight += questionWeight;
+
+      // ── 画像行ノードを1行ずつ追加（2行目以降は改ページ可能）──
+      for (let rowIdx = 0; rowIdx < imageRowCount; rowIdx++) {
+        const rowImageIds = itemImageIds.slice(rowIdx * IMAGES_PER_ROW, (rowIdx + 1) * IMAGES_PER_ROW);
+        const isLastRow = rowIdx === imageRowCount - 1;
+
+        // 2行目以降のみ改ページ判定（1行目はアンカーウェイトで保証済み）
+        if (rowIdx > 0 && currentWeight + IMAGES_WEIGHT_PER_ROW > PAGE_LIMIT) {
+          breakPage();
+        }
+
+        if (import.meta.env.DEV) {
+          console.debug(
+            `[PDF]   └ row ${rowIdx + 1}/${imageRowCount} (${rowImageIds.length}枚) | cumulative=${(currentWeight + IMAGES_WEIGHT_PER_ROW).toFixed(1)}/${PAGE_LIMIT}`
+          );
+        }
+
+        currentPageNodes.push(
+          <div
+            key={`img-${item.id}-row${rowIdx}`}
+            style={{
+              padding: "8px 10px 12px 40px",
+              borderBottom: isLastRow ? "1px solid #eee" : "none",
               display: "flex",
-              flexWrap: "wrap",
+              flexWrap: "nowrap",  // 行内では折り返さない（行単位で管理）
               gap: "8px",
-              background: "#fafafa"
-            }}>
-              {itemImageIds.map((imgId) => {
-                const dataUrl = imageUrls[imgId];
-                if (!dataUrl) return null;
-                return (
+              background: "#fafafa",
+            }}
+          >
+            {rowImageIds.map((imgId) => {
+              const dataUrl = imageUrls[imgId];
+              if (!dataUrl) return null;
+              return (
+                // html2canvas は objectFit をサポートしないため使用しない。
+                // 固定 240×180 のwrapperDiv内に、width/height:auto の img を flex-center で配置する。
+                // → 各画像が元のアスペクト比を保持しグレー余白でレターボックス表示される
+                <div
+                  key={imgId}
+                  style={{
+                    width: "240px",
+                    height: "180px",
+                    background: "#f5f5f5",
+                    border: "1px solid #ddd",
+                    borderRadius: "4px",
+                    flexShrink: 0,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    overflow: "hidden",
+                  }}
+                >
                   <img
-                    key={imgId}
                     src={dataUrl}
                     alt="添付写真"
                     style={{
-                      width: "200px",
+                      maxWidth: "240px",
+                      maxHeight: "180px",
+                      width: "auto",
                       height: "auto",
-                      maxHeight: "150px", // 画像最大高さ
-                      objectFit: "contain",
-                      border: "1px solid #ddd",
-                      borderRadius: "4px",
+                      display: "block",
                     }}
                   />
-                );
-              })}
-            </div>
-          )}
-        </div>
-      );
-      currentWeight += itemWeight;
+                </div>
+              );
+            })}
+          </div>
+        );
+        currentWeight += IMAGES_WEIGHT_PER_ROW;
+      }
     });
   });
 
   // 3. フッター
   if (currentWeight + 2 > PAGE_LIMIT) {
-    pages.push(currentPageNodes);
-    currentPageNodes = [];
+    breakPage();
   }
   currentPageNodes.push(
     <div key="footer" style={{ marginTop: "20px", textAlign: "right", fontSize: "10px", color: "#999" }}>
@@ -237,7 +288,7 @@ const PDFTemplate = React.forwardRef(({ session, categorizedAnswers, yesCount, n
           boxSizing: "border-box",
           color: "#000000",
           fontFamily: "sans-serif",
-          overflow: "hidden"
+          overflow: "hidden",
         }}>
           {pageNodes}
         </div>

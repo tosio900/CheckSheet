@@ -41,7 +41,7 @@ export async function generatePDF(element, sessionData) {
       // html2canvasでページごとにキャンバスに描画
       // scrollHeight: minHeight による水増しを除き、実コンテンツの高さを取得する
       const canvas = await html2canvas(pageEl, {
-        scale: 2, // 高解像度
+        scale: 2.5, // 印刷品質向上: 画像ボックス240px×2.5=600px → A4換算で約300DPI達成
         useCORS: true,
         logging: false,
         backgroundColor: "#ffffff",
