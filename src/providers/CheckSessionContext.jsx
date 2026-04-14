@@ -4,6 +4,7 @@ import {
   loadCheckSession,
   clearCheckSession,
   generateCheckId,
+  saveSessionToHistory,
 } from "../utils/storage";
 import { useTemplates } from "./TemplateContext";
 import { SESSION_STATUS } from "../constants/session";
@@ -186,7 +187,11 @@ export function CheckSessionProvider({ children }) {
         } else {
           if (saveError) setSaveError(null);
           if (state.session.status === SESSION_STATUS.COMPLETED) {
-            import("../utils/storage").then(m => m.saveSessionToHistory(state.session));
+            try {
+              saveSessionToHistory(state.session);
+            } catch (histErr) {
+              logger.error("Failed to save session to history", histErr);
+            }
           }
         }
       } catch (err) {

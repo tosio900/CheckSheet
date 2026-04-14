@@ -19,6 +19,9 @@ export default function ImageAnnotator({ imageBlob, onSave, onCancel }) {
   const [drawHistory, setDrawHistory] = useState([]);
   const [isDrawMode, setIsDrawMode] = useState(true);
   const imageDataRef = useRef(null); // 元画像のImageDataキャッシュ
+  // 表示サイズ ↔ ビットマップサイズの変換係数（描画座標のスケーリングに使用）
+  const scaleXRef = useRef(1);
+  const scaleYRef = useRef(1);
 
   // 描画設定（赤ペン固定）
   const PEN_COLOR = "#ef4444";
@@ -36,26 +39,35 @@ export default function ImageAnnotator({ imageBlob, onSave, onCancel }) {
     const img = new Image();
 
     img.onload = () => {
-      // Canvas サイズを画像に合わせる（コンテナ幅を超えないように）
+      // 表示サイズ（コンテナに収まるスケール）を計算
       const container = canvas.parentElement;
       const maxWidth = container.clientWidth;
       const maxHeight = container.clientHeight;
-
       const ratio = Math.min(maxWidth / img.width, maxHeight / img.height, 1);
       const drawWidth = Math.round(img.width * ratio);
       const drawHeight = Math.round(img.height * ratio);
 
-      canvas.width = drawWidth;
-      canvas.height = drawHeight;
-      ctx.drawImage(img, 0, 0, drawWidth, drawHeight);
+      // キャンバスかビットマップサイズ = 元画像サイズ（高解像度で保存するため）
+      canvas.width = img.width;
+      canvas.height = img.height;
+      // CSS表示サイズ = コンテナに合わせた長辺制弦サイズ
+      canvas.style.width = `${drawWidth}px`;
+      canvas.style.height = `${drawHeight}px`;
+
+      // 描画座標の変換係数を保存（CSSピクセル → ビットマップピクセル）
+      scaleXRef.current = img.width / drawWidth;
+      scaleYRef.current = img.height / drawHeight;
+
+      // 元画像をビットマップ全体に描画
+      ctx.drawImage(img, 0, 0, img.width, img.height);
 
       // 元画像のImageDataを保存（Undo用）
-      imageDataRef.current = ctx.getImageData(0, 0, drawWidth, drawHeight);
+      imageDataRef.current = ctx.getImageData(0, 0, img.width, img.height);
       // 初期状態を履歴に追加
-      setDrawHistory([ctx.getImageData(0, 0, drawWidth, drawHeight)]);
+      setDrawHistory([ctx.getImageData(0, 0, img.width, img.height)]);
 
       URL.revokeObjectURL(url);
-      logger.debug("Annotator: image loaded", { drawWidth, drawHeight });
+      logger.debug("Annotator: image loaded", { drawWidth, drawHeight, bitmapW: img.width, bitmapH: img.height });
     };
 
     img.onerror = () => {
@@ -73,9 +85,10 @@ export default function ImageAnnotator({ imageBlob, onSave, onCancel }) {
     const canvas = canvasRef.current;
     if (!canvas) return { x: 0, y: 0 };
     const rect = canvas.getBoundingClientRect();
+    // CSS㔏示座標 → ビットマップ座標へ変換（スケール係数を乗算）
     return {
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
+      x: (e.clientX - rect.left) * scaleXRef.current,
+      y: (e.clientY - rect.top) * scaleYRef.current,
     };
   }, []);
 
@@ -98,7 +111,8 @@ export default function ImageAnnotator({ imageBlob, onSave, onCancel }) {
       ctx.beginPath();
       ctx.moveTo(x, y);
       ctx.strokeStyle = PEN_COLOR;
-      ctx.lineWidth = PEN_WIDTH;
+      // lineWidthもビットマップ座標系にスケール（元画像上で適切な太さになる）
+      ctx.lineWidth = PEN_WIDTH * scaleXRef.current;
       ctx.lineCap = "round";
       ctx.lineJoin = "round";
       setIsDrawing(true);

@@ -9,8 +9,8 @@
 
 import logger from "./logger";
 
-/** 長辺の最大ピクセル数 */
-const MAX_DIMENSION = 1024;
+/** 長辺の最大ピクセル数（ハイブリッドPDF生成で直接埋め込み可能なため高解像度を維持） */
+const MAX_DIMENSION = 1920;
 
 /** JPEG品質 (0.0 ~ 1.0) */
 const JPEG_QUALITY = 0.80;

@@ -2,20 +2,22 @@
  * GPS位置情報取得ユーティリティ
  */
 
+import logger from "./logger";
+
 /**
  * 現在の位置情報を取得する（3秒タイムアウト制限付き）
  * @returns {Promise<{lat: number, lng: number, alt: number | null} | null>}
  */
 export async function getCurrentLocation() {
   if (!("geolocation" in navigator)) {
-    console.warn("Geolocation is not supported by this browser.");
+    logger.warn("Geolocation is not supported by this browser.");
     return null;
   }
 
   return new Promise((resolve) => {
     // 3秒で強制終了するためのタイマー
     const timeoutId = setTimeout(() => {
-      console.warn("GPS acquisition timed out (3s limit reached)");
+      logger.warn("GPS acquisition timed out (3s limit reached)");
       resolve(null);
     }, 3000);
 
@@ -32,7 +34,7 @@ export async function getCurrentLocation() {
       },
       (error) => {
         clearTimeout(timeoutId);
-        console.warn("GPS acquisition failed:", error.message);
+        logger.warn("GPS acquisition failed:", error.message);
         resolve(null);
       },
       {

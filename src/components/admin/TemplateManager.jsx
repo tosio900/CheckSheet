@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { 
-  ChevronLeft, 
-  Plus, 
-  Download, 
-  Upload, 
-  Trash2, 
-  Check, 
+import {
+  ChevronLeft,
+  Plus,
+  Download,
+  Upload,
+  Trash2,
+  Check,
   FileEdit
 } from "lucide-react";
 import { useTemplates } from "../../providers/TemplateContext";
@@ -17,17 +17,26 @@ import logger from "../../utils/logger";
  * テンプレート一覧・管理画面
  */
 export default function TemplateManager({ onBack, onEditTemplate }) {
-  const { 
-    templates, 
-    activeTemplateId, 
-    switchTemplate, 
-    saveTemplate, 
-    deleteTemplate 
+  const {
+    templates,
+    activeTemplateId,
+    switchTemplate,
+    saveTemplate,
+    deleteTemplate
   } = useTemplates();
-  
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(null); // id
+
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(null); // template object
   const [isImporting, setIsImporting] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [notification, setNotification] = useState(null); // { type: 'success'|'error', message }
+
+  /**
+   * インライン通知を表示（3秒後に自動消去）
+   */
+  const showNotification = (type, message) => {
+    setNotification({ type, message });
+    setTimeout(() => setNotification(null), 3000);
+  };
 
   // 新規テンプレート作成
   const handleCreateNew = async () => {
@@ -43,29 +52,29 @@ export default function TemplateManager({ onBack, onEditTemplate }) {
       createdAt: now.toISOString(),
       updatedAt: now.toISOString()
     };
-    
+
     try {
       await saveTemplate(newTemplate);
       logger.info("Created new empty template", newTemplate.id);
-      
       // 作成後、即座に編集画面へ遷移させる
       onEditTemplate(newTemplate);
     } catch (err) {
       logger.error("Failed to create template", err);
-      alert("作成に失敗しました");
+      showNotification("error", "作成に失敗しました");
     }
   };
+
   // エクスポート (JSON)
   const handleExport = (template) => {
     const dataStr = JSON.stringify(template, null, 2);
     const blob = new Blob([dataStr], { type: "application/json" });
     const url = URL.createObjectURL(blob);
-    
+
     const link = document.createElement("a");
     link.href = url;
     link.download = `${template.name}_${new Date().toISOString().split('T')[0]}.json`;
     link.click();
-    
+
     URL.revokeObjectURL(url);
     logger.info("Exported template", template.id);
   };
@@ -79,13 +88,13 @@ export default function TemplateManager({ onBack, onEditTemplate }) {
     reader.onload = async (event) => {
       try {
         const template = JSON.parse(event.target.result);
-        
+
         // 簡易バリデーション
         if (!template.name || !Array.isArray(template.categories)) {
           throw new Error("不正な形式のファイルです");
         }
 
-        // 新しいIDを発行してインポート（同名衝突を避けるため、または上書きを避けるため）
+        // 新しいIDを発行してインポート（同名衝突を避けるため）
         const importedTemplate = {
           ...template,
           id: "tmpl_imp_" + Date.now(),
@@ -95,10 +104,10 @@ export default function TemplateManager({ onBack, onEditTemplate }) {
 
         await saveTemplate(importedTemplate);
         logger.info("Imported template", importedTemplate.id);
-        alert("インポートが完了しました");
+        showNotification("success", "インポートが完了しました");
       } catch {
         logger.error("Import failed");
-        alert("インポートに失敗しました");
+        showNotification("error", "インポートに失敗しました");
       } finally {
         setIsImporting(false);
       }
@@ -128,12 +137,12 @@ export default function TemplateManager({ onBack, onEditTemplate }) {
     if (file && file.name.endsWith('.json')) {
       processImportFile(file);
     } else if (file) {
-      alert('JSONファイルのみ対応しています。');
+      showNotification("error", "JSONファイルのみ対応しています。");
     }
   };
 
   return (
-    <div 
+    <div
       className={`${styles.container} ${isDragging ? styles.dragging : ""}`}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
@@ -155,10 +164,17 @@ export default function TemplateManager({ onBack, onEditTemplate }) {
           使用するチェックリストを選択、または新規作成・編集できます。
         </p>
 
+        {/* インライン通知 */}
+        {notification && (
+          <div className={`${styles.notification} ${styles[`notification-${notification.type}`]}`}>
+            {notification.message}
+          </div>
+        )}
+
         <div className={styles.list}>
           {templates.map(template => (
-            <div 
-              key={template.id} 
+            <div
+              key={template.id}
               className={`${styles.card} ${activeTemplateId === template.id ? styles.active : ""}`}
             >
               <div className={styles["card-main"]} onClick={() => switchTemplate(template.id)}>
@@ -173,25 +189,25 @@ export default function TemplateManager({ onBack, onEditTemplate }) {
 
               <div className={styles.actions}>
                 {template.id !== "default" && (
-                  <button 
-                    className={styles["icon-btn"]} 
-                    title="編集" 
+                  <button
+                    className={styles["icon-btn"]}
+                    title="編集"
                     onClick={() => onEditTemplate(template)}
                   >
                     <FileEdit size={18} />
                   </button>
                 )}
-                <button 
-                  className={styles["icon-btn"]} 
-                  title="エクスポート" 
+                <button
+                  className={styles["icon-btn"]}
+                  title="エクスポート"
                   onClick={() => handleExport(template)}
                 >
                   <Download size={18} />
                 </button>
                 {template.id !== "default" && (
-                   <button 
-                    className={styles["icon-btn-delete"]} 
-                    title="削除" 
+                  <button
+                    className={styles["icon-btn-delete"]}
+                    title="削除"
                     onClick={() => setShowDeleteConfirm(template)}
                   >
                     <Trash2 size={18} />
@@ -205,10 +221,10 @@ export default function TemplateManager({ onBack, onEditTemplate }) {
         <div className={styles.footer}>
           <label className={styles["import-label"]}>
             <Upload size={18} /> テンプレートをインポート
-            <input 
-              type="file" 
-              accept=".json" 
-              onChange={handleImport} 
+            <input
+              type="file"
+              accept=".json"
+              onChange={handleImport}
               disabled={isImporting}
               style={{ display: "none" }}
             />
