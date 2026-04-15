@@ -1,5 +1,8 @@
 import { get, set } from "idb-keyval";
-import { categories as defaultCategories } from "../data/checkItems";
+import {
+  categories as defaultCategories,
+  CHECK_ITEMS_SCHEMA_VERSION
+} from "../data/checkItems";
 
 const TEMPLATES_KEY = "survey_templates_v1";
 const ACTIVE_TEMPLATE_ID_KEY = "active_template_id_v1";
@@ -8,6 +11,13 @@ const ACTIVE_TEMPLATE_ID_KEY = "active_template_id_v1";
  * テンプレート操作ユーティリティ
  */
 
+function cloneCategories(categories) {
+  if (typeof structuredClone === "function") {
+    return structuredClone(categories);
+  }
+  return JSON.parse(JSON.stringify(categories));
+}
+
 /**
  * 初期テンプレートを生成する
  */
@@ -15,7 +25,8 @@ function createDefaultTemplate() {
   return {
     id: "default",
     name: "測量前標準チェックリスト",
-    categories: defaultCategories,
+    categories: cloneCategories(defaultCategories),
+    schemaVersion: CHECK_ITEMS_SCHEMA_VERSION,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     isDefault: true
@@ -32,7 +43,25 @@ export async function getTemplates() {
     await set(TEMPLATES_KEY, [defaultTemplate]);
     return [defaultTemplate];
   }
-  return templates;
+
+  const defaultIndex = templates.findIndex(t => t.id === "default");
+  if (defaultIndex < 0) return templates;
+
+  const savedDefault = templates[defaultIndex];
+  const savedVersion = savedDefault.schemaVersion ?? 0;
+  if (savedVersion >= CHECK_ITEMS_SCHEMA_VERSION) return templates;
+
+  const migratedDefault = {
+    ...savedDefault,
+    categories: cloneCategories(defaultCategories),
+    schemaVersion: CHECK_ITEMS_SCHEMA_VERSION,
+    updatedAt: new Date().toISOString()
+  };
+
+  const nextTemplates = [...templates];
+  nextTemplates[defaultIndex] = migratedDefault;
+  await set(TEMPLATES_KEY, nextTemplates);
+  return nextTemplates;
 }
 
 /**

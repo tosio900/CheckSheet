@@ -3,6 +3,11 @@
  * 6カテゴリ、計39項目
  */
 
+// 運用ルール:
+// - defaultテンプレートへ反映したいデータ変更（項目追加/削除、inputs・requiredPhoto変更など）を行ったら必ず +1 する
+// - 文言のみの軽微修正で既存defaultの再生成が不要な場合は据え置き可
+export const CHECK_ITEMS_SCHEMA_VERSION = 2;
+
 export const categories = [
   {
     id: "cat_01",
@@ -71,6 +76,7 @@ export const categories = [
         id: "item_03_01",
         question: "測量対象構造物(作工物・道路・側溝など)の前後の測点で勾配に変化はあるか",
         note: "・事前に変化点があるかを調べて野帳に記録する",
+        inputs: ["測点1", "測点2"],
       },
       {
         id: "item_03_02",

@@ -4,7 +4,7 @@ import styles from "../ChatCheck.module.css";
 export default function AnswerControls({ 
   currentIndex, 
   isInputIncomplete,
-  missingInputs = [],
+  requiresAnyInput = false,
   isPhotoMissing = false,
   onAnswer, 
   onBack, 
@@ -13,12 +13,12 @@ export default function AnswerControls({
 }) {
   let validationMessage = "";
   if (isInputIncomplete) {
-    if (missingInputs.length > 0 && isPhotoMissing) {
-      validationMessage = "写真の添付と入力項目の入力が必要です";
+    if (requiresAnyInput && isPhotoMissing) {
+      validationMessage = "写真の添付と入力項目のいずれか1つの入力が必要です";
     } else if (isPhotoMissing) {
       validationMessage = "写真を添付してください";
-    } else if (missingInputs.length > 0) {
-      validationMessage = `「${missingInputs[0]}」を入力してください`;
+    } else if (requiresAnyInput) {
+      validationMessage = "入力項目を1つ以上入力してください";
     }
   }
 

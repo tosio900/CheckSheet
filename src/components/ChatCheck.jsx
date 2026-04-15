@@ -112,11 +112,12 @@ export default function ChatCheck({ onComplete, onExit, isEditingAfterComplete }
     : [];
 
   // バリデーション計算（入力値や写真が不足している場合は「はい」を押せないようにする判定）
-  const missingInputs = currentItem?.inputs 
-    ? currentItem.inputs.filter(label => !currentInputs[label] || currentInputs[label].trim() === "")
-    : [];
-
-  const isTextIncomplete = missingInputs.length > 0;
+  const inputLabels = currentItem?.inputs ?? [];
+  const filledInputsCount = inputLabels.filter(
+    (label) => (currentInputs[label] || "").trim() !== ""
+  ).length;
+  const requiresAnyInput = inputLabels.length > 0;
+  const isTextIncomplete = requiresAnyInput && filledInputsCount === 0;
   const isPhotoMissing = !!currentItem?.requiredPhoto && currentImageIds.length === 0;
   
   const isInputIncomplete = isTextIncomplete || isPhotoMissing;
@@ -154,7 +155,7 @@ export default function ChatCheck({ onComplete, onExit, isEditingAfterComplete }
           <AnswerControls 
               currentIndex={currentIndex}
               isInputIncomplete={isInputIncomplete}
-              missingInputs={missingInputs}
+              requiresAnyInput={requiresAnyInput}
               isPhotoMissing={isPhotoMissing}
               onAnswer={handleAnswer}
               onBack={handleBack}
